@@ -1,0 +1,119 @@
+:root {
+    --panel-bg: #F5F7FA;
+    --panel-primary: #3B5F8A;
+    --panel-text: #1F2430;
+    --panel-white: #FFFFFF;
+    --status-merah: #DC3545;
+    --status-kuning: #FFC107;
+    --status-hijau: #198754;
+}
+
+body {
+    background-color: var(--panel-bg);
+    color: var(--panel-text);
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--panel-text);
+    font-weight: 700;
+}
+
+h2 {
+    font-size: 28px !important;
+}
+
+.panel-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar-desktop {
+    width: 280px;
+    background-color: var(--panel-white);
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 100;
+}
+
+.sidebar-desktop .nav-link {
+    color: var(--panel-text);
+    font-size: 20px;
+    font-weight: 500;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    padding: 16px 20px !important;
+}
+
+.sidebar-desktop .nav-link:hover,
+.sidebar-desktop .nav-link.active {
+    background-color: var(--panel-primary);
+    color: var(--panel-white);
+}
+
+.main-content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 992px) {
+    .main-content-area {
+        margin-left: 280px;
+    }
+}
+
+.btn-primary {
+    background-color: var(--panel-primary) !important;
+    border-color: var(--panel-primary) !important;
+    min-height: 60px;
+    font-size: 20px;
+}
+
+.form-control, .form-select {
+    min-height: 60px;
+    font-size: 20px;
+    border-radius: 12px;
+    border: 2px solid #DCE5F1;
+}
+
+.form-control:focus {
+    border-color: var(--panel-primary);
+    box-shadow: 0 0 0 0.25rem rgba(59, 95, 138, 0.25);
+}
+
+.mobile-bottom-nav {
+    z-index: 1030;
+    background-color: var(--panel-white);
+    border-top: 1px solid #dee2e6;
+}
+
+.mobile-bottom-nav .nav-link {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+@media (max-width: 991.98px) {
+    main.container-fluid {
+        padding-bottom: 90px !important;
+    }
+}
+
+/* Samakan semua warna primer Bootstrap dengan biru baja panel */
+.text-primary {
+    color: var(--panel-primary) !important;
+}
+
+.btn-outline-primary {
+    color: var(--panel-primary);
+    border-color: var(--panel-primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--panel-primary);
+    border-color: var(--panel-primary);
+    color: var(--panel-white);
+}
