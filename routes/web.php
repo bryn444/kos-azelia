@@ -2,12 +2,17 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\Pengelola\BerandaController;
 use App\Http\Controllers\Pengelola\KamarController;
 use App\Http\Controllers\Pengelola\PenghuniController;
 use App\Http\Controllers\Pengelola\PembayaranController;
 use App\Http\Controllers\Pengelola\TambahanWaktuController;
 use App\Http\Controllers\Pengelola\InformasiKosController;
+use App\Http\Controllers\Pemilik\RekapController;
+use App\Http\Controllers\Pemilik\BelumBayarController;
+use App\Http\Controllers\Pemilik\RiwayatController;
+use App\Http\Controllers\Pemilik\LainnyaController;
 
 // 1. Rute Publik (Calon Penghuni)
 Route::get('/', function () {
@@ -20,13 +25,13 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Rute Ganti Password (untuk yang sudah login)
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'noCache'])->group(function () {
     Route::get('/ganti-password', [AuthController::class, 'showGantiPassword'])->name('password.change');
     Route::post('/ganti-password', [AuthController::class, 'updatePassword']);
 });
 
 // 3. Rute Panel Pengelola (Kakek)
-Route::middleware(['auth', 'isPengelola'])->prefix('pengelola')->name('pengelola.')->group(function () {
+Route::middleware(['auth', 'noCache', 'isPengelola'])->prefix('pengelola')->name('pengelola.')->group(function () {
     Route::get('/beranda', [BerandaController::class, 'index'])->name('beranda');
     
     // Modul Kamar
@@ -65,4 +70,24 @@ Route::middleware(['auth', 'isPengelola'])->prefix('pengelola')->name('pengelola
     Route::get('/lainnya/{informasiKos}/ubah', [InformasiKosController::class, 'edit'])->name('lainnya.edit');
     Route::post('/lainnya/{informasiKos}/ubah', [InformasiKosController::class, 'update'])->name('lainnya.update');
     Route::post('/lainnya/{informasiKos}/hapus', [InformasiKosController::class, 'destroy'])->name('lainnya.destroy');
+
+    // Modul Laporan Pengelola
+    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+    Route::get('/laporan/pdf', [LaporanController::class, 'downloadPdf'])->name('laporan.pdf');
+    Route::get('/laporan/excel', [LaporanController::class, 'downloadExcel'])->name('laporan.excel');
+});
+
+// 4. Rute Panel Pemilik (Ibu Endang Supriyatin)
+Route::middleware(['auth', 'noCache', 'isPemilik'])->prefix('pemilik')->name('pemilik.')->group(function () {
+    Route::get('/rekap', [RekapController::class, 'index'])->name('rekap');
+    Route::get('/belum-bayar', [BelumBayarController::class, 'index'])->name('belum_bayar');
+    Route::get('/riwayat-pembayaran', [RiwayatController::class, 'pembayaran'])->name('riwayat_pembayaran');
+    Route::get('/riwayat-tambahan-waktu', [RiwayatController::class, 'tambahanWaktu'])->name('riwayat_tambahan_waktu');
+    Route::get('/lainnya', [LainnyaController::class, 'index'])->name('lainnya');
+
+
+    // Modul Laporan Pemilik
+    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+    Route::get('/laporan/pdf', [LaporanController::class, 'downloadPdf'])->name('laporan.pdf');
+    Route::get('/laporan/excel', [LaporanController::class, 'downloadExcel'])->name('laporan.excel');
 });

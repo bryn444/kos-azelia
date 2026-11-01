@@ -6,8 +6,13 @@
 <div class="row g-4 mb-5">
     <div class="col-md-6">
         <div class="card border-0 shadow-sm rounded-4 p-4 bg-white text-center">
-            <h3 class="fw-bold mb-3">Pengaturan Akun</h3>
-            <a href="{{ route('password.change') }}" class="btn btn-outline-primary btn-lg rounded-pill py-3 fw-bold mb-3">Ganti Kata Sandi</a>
+            <h3 class="fw-bold mb-3">Pengaturan Akun & Menu Pengelola</h3>
+            <a href="{{ route('password.change') }}" class="btn btn-outline-primary btn-lg rounded-pill py-3 fw-bold mb-3 w-100">Ganti Kata Sandi</a>
+            
+            <!-- Tautan tambahan untuk pengelola -->
+            <a href="{{ route('pengelola.laporan') }}" class="btn btn-outline-primary btn-lg rounded-pill py-3 fw-bold mb-3 w-100">Laporan Bulanan</a>
+            <a href="{{ route('pengelola.tambahan_waktu.index') }}" class="btn btn-outline-primary btn-lg rounded-pill py-3 fw-bold mb-3 w-100">Riwayat Tambahan Waktu</a>
+
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
                 <button type="submit" class="btn btn-danger btn-lg rounded-pill py-3 fw-bold w-100">Keluar dari Sistem</button>
