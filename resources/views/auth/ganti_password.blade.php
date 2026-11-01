@@ -1,4 +1,4 @@
-@extends('layouts.panel.main')
+@extends(auth()->user()->role === 'pemilik' ? 'layouts.pemilik.main' : 'layouts.panel.main')
 
 @section('title', 'Ganti Kata Sandi - Kos Azelia')
 

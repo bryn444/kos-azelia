@@ -1,0 +1,169 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+    --kaca-bg: rgba(255, 255, 255, 0.14);
+    --kaca-border: 1px solid rgba(255, 255, 255, 0.38);
+    --kaca-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    --radius-besar: 28px;
+    --radius-kecil: 18px;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-image: var(--latar-halaman);
+    background-attachment: fixed;
+    background-size: cover;
+    background-position: center;
+    color: #FFFFFF;
+    min-height: 100vh;
+    margin: 0;
+}
+
+/* Fallback jika backdrop-filter tidak didukung */
+@supports not (backdrop-filter: blur(1px)) {
+    .sidebar-kaca, .navbar-kaca, .konten-kaca, .mobile-nav-kaca {
+        background-color: rgba(30, 64, 130, 0.85) !important;
+    }
+}
+
+.sidebar-kaca {
+    width: 300px;
+    background: var(--kaca-bg);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: var(--kaca-border);
+    box-shadow: var(--kaca-shadow);
+    border-radius: var(--radius-besar);
+    position: fixed;
+    top: 16px;
+    bottom: 16px;
+    left: 16px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+}
+
+.sidebar-brand-box {
+    text-align: center;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 20px;
+}
+
+.avatar-bulat {
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.25);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin: 0 auto 12px auto;
+}
+
+.sidebar-kaca .nav-link {
+    background: var(--kaca-bg);
+    backdrop-filter: blur(12px);
+    border: var(--kaca-border);
+    color: #FFFFFF;
+    font-size: 20px;
+    font-weight: 500;
+    border-radius: var(--radius-kecil);
+    padding: 16px 20px !important;
+    margin-bottom: 12px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-kaca .nav-link:hover,
+.sidebar-kaca .nav-link.active {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: #FFFFFF;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
+}
+
+.btn-pil-putih {
+    background: #FFFFFF;
+    color: #1F2430;
+    font-weight: 700;
+    font-size: 18px;
+    border-radius: 50px;
+    padding: 14px 28px;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease;
+    text-align: center;
+    display: inline-block;
+    width: 100%;
+}
+
+.btn-pil-putih:hover {
+    transform: scale(1.02);
+    background: #f0f0f0;
+    color: #1F2430;
+}
+
+.main-content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-left: 332px;
+    padding: 16px;
+}
+
+@media (max-width: 991.98px) {
+    .main-content-area {
+        margin-left: 0;
+        padding-top: 90px;
+        padding-bottom: 100px;
+    }
+}
+
+.navbar-kaca {
+    background: var(--kaca-bg);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: var(--kaca-border);
+    box-shadow: var(--kaca-shadow);
+    border-radius: var(--radius-besar);
+    padding: 16px 28px;
+    margin-bottom: 24px;
+}
+
+.konten-kaca {
+    background: rgba(255, 255, 255, 0.93);
+    color: #1F2430;
+    border-radius: 24px;
+    padding: 32px;
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.25);
+}
+
+.mobile-nav-kaca {
+    background: var(--kaca-bg);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: var(--kaca-border);
+    border-radius: var(--radius-besar) var(--radius-besar) 0 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1030;
+    padding: 12px 16px;
+}
+
+.mobile-nav-kaca .nav-link {
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.mobile-nav-kaca .nav-link.active {
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}

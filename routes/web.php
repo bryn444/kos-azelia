@@ -2,12 +2,18 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\Pengelola\BerandaController;
 use App\Http\Controllers\Pengelola\KamarController;
 use App\Http\Controllers\Pengelola\PenghuniController;
 use App\Http\Controllers\Pengelola\PembayaranController;
 use App\Http\Controllers\Pengelola\TambahanWaktuController;
 use App\Http\Controllers\Pengelola\InformasiKosController;
+use App\Http\Controllers\Pemilik\RekapController;
+use App\Http\Controllers\Pemilik\BelumBayarController;
+use App\Http\Controllers\Pemilik\RiwayatController;
+use App\Http\Controllers\Pemilik\LainnyaController;
+use App\Http\Controllers\Pemilik\TampilanController;
 
 // 1. Rute Publik (Calon Penghuni)
 Route::get('/', function () {
@@ -65,4 +71,28 @@ Route::middleware(['auth', 'isPengelola'])->prefix('pengelola')->name('pengelola
     Route::get('/lainnya/{informasiKos}/ubah', [InformasiKosController::class, 'edit'])->name('lainnya.edit');
     Route::post('/lainnya/{informasiKos}/ubah', [InformasiKosController::class, 'update'])->name('lainnya.update');
     Route::post('/lainnya/{informasiKos}/hapus', [InformasiKosController::class, 'destroy'])->name('lainnya.destroy');
+
+    // Modul Laporan Pengelola
+    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+    Route::get('/laporan/pdf', [LaporanController::class, 'downloadPdf'])->name('laporan.pdf');
+    Route::get('/laporan/excel', [LaporanController::class, 'downloadExcel'])->name('laporan.excel');
+});
+
+// 4. Rute Panel Pemilik (Ibu Endang Supriyatin)
+Route::middleware(['auth', 'isPemilik'])->prefix('pemilik')->name('pemilik.')->group(function () {
+    Route::get('/rekap', [RekapController::class, 'index'])->name('rekap');
+    Route::get('/belum-bayar', [BelumBayarController::class, 'index'])->name('belum_bayar');
+    Route::get('/riwayat-pembayaran', [RiwayatController::class, 'pembayaran'])->name('riwayat_pembayaran');
+    Route::get('/riwayat-tambahan-waktu', [RiwayatController::class, 'tambahanWaktu'])->name('riwayat_tambahan_waktu');
+    Route::get('/lainnya', [LainnyaController::class, 'index'])->name('lainnya');
+
+    // Modul Tampilan Latar Pemilik
+    Route::get('/tampilan', [TampilanController::class, 'index'])->name('tampilan');
+    Route::post('/tampilan/simpan', [TampilanController::class, 'simpan'])->name('tampilan.simpan');
+    Route::post('/tampilan/reset', [TampilanController::class, 'reset'])->name('tampilan.reset');
+
+    // Modul Laporan Pemilik
+    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
+    Route::get('/laporan/pdf', [LaporanController::class, 'downloadPdf'])->name('laporan.pdf');
+    Route::get('/laporan/excel', [LaporanController::class, 'downloadExcel'])->name('laporan.excel');
 });
