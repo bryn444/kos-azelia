@@ -13,11 +13,14 @@ use App\Http\Controllers\Pemilik\RekapController;
 use App\Http\Controllers\Pemilik\BelumBayarController;
 use App\Http\Controllers\Pemilik\RiwayatController;
 use App\Http\Controllers\Pemilik\LainnyaController;
+use App\Http\Controllers\Pemilik\TampilanController;
+use App\Http\Controllers\Publik\PublikController;
 
 // 1. Rute Publik (Calon Penghuni)
-Route::get('/', function () {
-    return view('publik.index');
-})->name('publik.index');
+Route::get('/', [PublikController::class, 'index'])->name('publik.index');
+Route::get('/tanya-asisten', [PublikController::class, 'tanyaAsistenForm'])->name('publik.tanya');
+Route::post('/tanya-asisten', [PublikController::class, 'tanyaAsistenProcess'])->name('publik.tanya.process')->middleware('throttle:20,1');
+Route::get('/hubungi-pengelola', [PublikController::class, 'hubungi'])->name('publik.hubungi');
 
 // 2. Rute Auth (Login & Logout)
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -25,13 +28,13 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Rute Ganti Password (untuk yang sudah login)
-Route::middleware(['auth', 'noCache'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('/ganti-password', [AuthController::class, 'showGantiPassword'])->name('password.change');
     Route::post('/ganti-password', [AuthController::class, 'updatePassword']);
 });
 
 // 3. Rute Panel Pengelola (Kakek)
-Route::middleware(['auth', 'noCache', 'isPengelola'])->prefix('pengelola')->name('pengelola.')->group(function () {
+Route::middleware(['auth', 'isPengelola'])->prefix('pengelola')->name('pengelola.')->group(function () {
     Route::get('/beranda', [BerandaController::class, 'index'])->name('beranda');
     
     // Modul Kamar
@@ -78,13 +81,17 @@ Route::middleware(['auth', 'noCache', 'isPengelola'])->prefix('pengelola')->name
 });
 
 // 4. Rute Panel Pemilik (Ibu Endang Supriyatin)
-Route::middleware(['auth', 'noCache', 'isPemilik'])->prefix('pemilik')->name('pemilik.')->group(function () {
+Route::middleware(['auth', 'isPemilik'])->prefix('pemilik')->name('pemilik.')->group(function () {
     Route::get('/rekap', [RekapController::class, 'index'])->name('rekap');
     Route::get('/belum-bayar', [BelumBayarController::class, 'index'])->name('belum_bayar');
     Route::get('/riwayat-pembayaran', [RiwayatController::class, 'pembayaran'])->name('riwayat_pembayaran');
     Route::get('/riwayat-tambahan-waktu', [RiwayatController::class, 'tambahanWaktu'])->name('riwayat_tambahan_waktu');
     Route::get('/lainnya', [LainnyaController::class, 'index'])->name('lainnya');
 
+    // Modul Tampilan Latar Pemilik
+    Route::get('/tampilan', [TampilanController::class, 'index'])->name('tampilan');
+    Route::post('/tampilan/simpan', [TampilanController::class, 'simpan'])->name('tampilan.simpan');
+    Route::post('/tampilan/reset', [TampilanController::class, 'reset'])->name('tampilan.reset');
 
     // Modul Laporan Pemilik
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
