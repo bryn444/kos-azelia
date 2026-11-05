@@ -1,66 +1,113 @@
 <?php
+/**
+ * NAMA FILE: app/Http/Controllers/Publik/PublikController.php
+ * FUNGSI: Mengelola data beranda, detail kamar, dan logika pencocokan Tanya Asisten.
+ * HALAMAN: Beranda, Detail Kamar, Tanya Asisten, Kontak.
+ * CARA MENGUBAH: Sesuaikan logika pencocokan kata kunci pada method tanyaAsistenProcess.
+ */
 
 namespace App\Http\Controllers\Publik;
 
 use App\Http\Controllers\Controller;
 use App\Models\InformasiKos;
+use App\Models\Kamar;
 use Illuminate\Http\Request;
 
 class PublikController extends Controller
 {
+    /**
+     * Menampilkan beranda publik dengan data kamar unggulan dan informasi kos
+     */
     public function index()
     {
+        // Mengambil maksimal 5 kamar unggulan yang memiliki minimal 1 foto
+        $kamarUnggulans = Kamar::with(['fotos', 'sampul'])
+            ->unggulan()
+            ->has('fotos')
+            ->take(5)
+            ->get();
+
+        // Mengambil kamar lainnya (non-unggulan, atau semua jika unggulan kosong)
+        $kamarLainnyas = Kamar::with(['fotos', 'sampul'])
+            ->where('unggulan', false)
+            ->get();
+
+        if ($kamarLainnyas->isEmpty()) {
+            $kamarLainnyas = Kamar::with(['fotos', 'sampul'])->get();
+        }
+
         $informasis = InformasiKos::all();
-        return view('publik.index', compact('informasis'));
+        $tarifTermurah = Kamar::min('tarif') ?? 550000;
+
+        return view('publik.index', compact('kamarUnggulans', 'kamarLainnyas', 'informasis', 'tarifTermurah'));
     }
 
+    /**
+     * Menampilkan halaman detail spesifik kamar (Privasi terjaga tanpa data penghuni)
+     */
+    public function showKamar(Kamar $kamar)
+    {
+        $kamar->load('fotos');
+        return view('publik.kamar_detail', compact('kamar'));
+    }
+
+    /**
+     * Menampilkan halaman Tanya Asisten
+     */
     public function tanyaAsistenForm()
     {
         return view('publik.tanya_asisten');
     }
 
+    /**
+     * Memproses pertanyaan pengguna dan mencocokkannya dengan tabel informasi_kos
+     */
     public function tanyaAsistenProcess(Request $request)
     {
         $request->validate([
             'pertanyaan' => 'required|string|max:200',
+        ], [
+            'pertanyaan.required' => 'Pertanyaan tidak boleh kosong.',
+            'pertanyaan.max' => 'Pertanyaan maksimal 200 karakter.',
         ]);
 
         $keyword = strtolower(trim($request->input('pertanyaan')));
         $informasis = InformasiKos::all();
-        $jawaban = null;
+        $jawabanTeks = null;
 
-        // Pencocokan kata kunci sederhana terhadap database informasi_kos
         foreach ($informasis as $info) {
             $judulLower = strtolower($info->judul);
-            $isiLower = strtolower($info->deskripsi);
-            $katLower = strtolower($info->kategori);
+            $deskripsiLower = strtolower($info->deskripsi);
+            $kategoriLower = strtolower($info->kategori);
 
             if (
-                str_contains($keyword, $katLower) || 
+                str_contains($keyword, $kategoriLower) || 
                 str_contains($keyword, $judulLower) || 
                 str_contains($judulLower, $keyword) ||
-                (str_contains($keyword, 'harga') && str_contains($katLower, 'harga')) ||
-                (str_contains($keyword, 'fasilitas') && str_contains($katLower, 'fasilitas')) ||
-                (str_contains($keyword, 'aturan') && str_contains($katLower, 'aturan')) ||
-                (str_contains($keyword, 'hewan') && str_contains($isiLower, 'hewan'))
+                (str_contains($keyword, 'harga') && str_contains($kategoriLower, 'harga')) ||
+                (str_contains($keyword, 'fasilitas') && str_contains($kategoriLower, 'fasilitas')) ||
+                (str_contains($keyword, 'aturan') && str_contains($kategoriLower, 'aturan')) ||
+                (str_contains($keyword, 'hewan') && str_contains($deskripsiLower, 'hewan'))
             ) {
-                $jawaban = "<strong>{$info->judul}</strong>: {$info->deskripsi}";
+                $jawabanTeks = $info->judul . ": " . $info->deskripsi;
                 break;
             }
         }
 
-        if (!$jawaban) {
-            $waNum = config('kos.whatsapp');
-            $jawaban = "Maaf, informasi spesifik tersebut tidak ditemukan dalam sistem kami. Silakan hubungi pengelola secara langsung melalui WhatsApp di nomor <a href='https://wa.me/{$waNum}' target='_blank' class='fw-bold text-primary'>0812-3456-7890</a> untuk bantuan lebih lanjut.";
+        if (!$jawabanTeks) {
+            $jawabanTeks = "Maaf, informasi tersebut tidak ditemukan dalam sistem. Silakan hubungi pengelola langsung untuk bantuan lebih lanjut.";
         }
 
         if ($request->expectsJson()) {
-            return response()->json(['jawaban' => $jawaban]);
+            return response()->json(['jawaban' => $jawabanTeks]);
         }
 
-        return back()->with('jawaban_hasil', $jawaban)->withInput();
+        return back()->with('jawaban_hasil', $jawabanTeks)->withInput();
     }
 
+    /**
+     * Menampilkan halaman Hubungi Pengelola
+     */
     public function hubungi()
     {
         return view('publik.hubungi');

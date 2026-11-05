@@ -23,6 +23,7 @@ use App\Http\Controllers\Publik\PublikController;
 
 // 1. Rute Publik (Calon Penghuni)
 Route::get('/', [PublikController::class, 'index'])->name('publik.index');
+Route::get('/kamar/{kamar}', [PublikController::class, 'showKamar'])->name('publik.kamar.show');
 Route::get('/tanya-asisten', [PublikController::class, 'tanyaAsistenForm'])->name('publik.tanya');
 Route::post('/tanya-asisten', [PublikController::class, 'tanyaAsistenProcess'])->name('publik.tanya.process')->middleware('throttle:20,1');
 Route::get('/hubungi-pengelola', [PublikController::class, 'hubungi'])->name('publik.hubungi');
