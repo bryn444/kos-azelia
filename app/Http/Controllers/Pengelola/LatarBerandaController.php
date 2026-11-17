@@ -3,18 +3,16 @@
 /**
  * NAMA FILE: app/Http/Controllers/Pengelola/LatarBerandaController.php
  * FUNGSI: Controller panel pengelola untuk mengelola foto latar belakang halaman calon penghuni
- *         (tampil halaman, unggah file asli tanpa konversi JPEG, simpan posisi/ukuran/rotasi,
- *         hapus satuan, dan kembalikan ke tampilan tanpa latar).
- * HALAMAN: Pengelola -> Latar Beranda (`/pengelola/latar-beranda`).
- * CARA MENGUBAH:
- * - Ubah konstanta `MAKS_FOTO` (15) atau `MAKS_UKURAN_KB` (3072 = 3 MB) di bagian atas class
- *   untuk mengatur batas unggahan.
- * - Ubah konstanta `MIN_LEBAR` (3) dan `MAKS_LEBAR` (200) untuk rentang lebar foto dalam cqw.
+ *         (tampil editor interaktif, pratinjau halaman publik untuk iframe, unggah file asli,
+ *         simpan posisi/ukuran/rotasi, hapus permanen satuan, dan reset ke tampilan tanpa latar).
+ * HALAMAN: Pengelola -> Latar Beranda (`/pengelola/latar-beranda` dan `/pengelola/latar-beranda/pratinjau`).
  */
 
 namespace App\Http\Controllers\Pengelola;
 
 use App\Http\Controllers\Controller;
+use App\Models\InformasiKos;
+use App\Models\Kamar;
 use App\Models\LatarFoto;
 use App\Services\LatarBerandaService;
 use Illuminate\Http\JsonResponse;
@@ -46,31 +44,78 @@ class LatarBerandaController extends Controller
     }
 
     /**
-     * Menampilkan halaman pengelola sederhana untuk mengatur foto latar belakang utama.
-     * Mengirimkan `$daftarFoto`, `$maksFoto`, dan `$maksUkuranMb` ke view `pengelola.latar.index`.
+     * Menampilkan halaman editor interaktif ala Canva untuk mengatur foto latar belakang utama.
      */
     public function index(): View
     {
         $daftarFoto = LatarFoto::query()
             ->area(self::AREA)
             ->terurut()
-            ->get();
+            ->get()
+            ->map(function (LatarFoto $foto): array {
+                return [
+                    'id' => (int) $foto->id,
+                    'url' => $foto->url,
+                    'nama_asli' => $foto->nama_asli ?: ('Foto #' . $foto->id),
+                    'rasio' => (float) $foto->rasio,
+                    'urutan' => (int) $foto->urutan,
+                    'aktif' => (bool) $foto->aktif,
+                    'laptop' => $foto->nilaiPerangkat('laptop'),
+                    'hp' => [
+                        'jangkar' => $foto->hp_jangkar,
+                        'x' => $foto->hp_x !== null ? (float) $foto->hp_x : null,
+                        'y' => $foto->hp_y !== null ? (float) $foto->hp_y : null,
+                        'lebar' => $foto->hp_lebar !== null ? (float) $foto->hp_lebar : null,
+                        'rot' => $foto->hp_rot !== null ? (float) $foto->hp_rot : null,
+                    ],
+                ];
+            })
+            ->values()
+            ->all();
 
         return view('pengelola.latar.index', [
-            'daftarFoto' => $daftarFoto,
+            'dataAwalEditor' => $daftarFoto,
             'maksFoto' => self::MAKS_FOTO,
             'maksUkuranMb' => (int) (self::MAKS_UKURAN_KB / 1024),
         ]);
     }
 
     /**
-     * Mengunggah satu atau beberapa foto latar apa adanya (tanpa konversi ke JPEG agar
-     * transparansi PNG dan WebP tetap utuh).
-     * Aturan validasi:
-     * - Format: jpg, jpeg, png, webp (tanpa svg dan gif), maksimal 3 MB per file.
-     * - Total foto per area maksimal 15 foto.
-     * - Foto baru langsung aktif (`aktif = true`), urutan = urutan tertinggi + 1, posisi default
-     *   (x=50, y=40, lebar=30, rot=0, jangkar='atas', hp_* null), rasio diisi dari getimagesize().
+     * Merender halaman beranda publik asli di dalam <iframe> editor
+     * dengan penanda `$modePratinjau = true`.
+     */
+    public function pratinjau(): View
+    {
+        $kamarUnggulans = Kamar::with(['fotos', 'sampul'])
+            ->unggulan()
+            ->has('fotos')
+            ->take(5)
+            ->get();
+
+        $kamarLainnyas = Kamar::with(['fotos', 'sampul'])
+            ->where('unggulan', false)
+            ->get();
+
+        if ($kamarLainnyas->isEmpty()) {
+            $kamarLainnyas = Kamar::with(['fotos', 'sampul'])->get();
+        }
+
+        $informasis = InformasiKos::all();
+        $tarifTermurah = Kamar::min('tarif') ?? 550000;
+        $latarUtama = $this->latarService->untukPublik(self::AREA);
+
+        return view('publik.index', [
+            'kamarUnggulans' => $kamarUnggulans,
+            'kamarLainnyas' => $kamarLainnyas,
+            'informasis' => $informasis,
+            'tarifTermurah' => $tarifTermurah,
+            'latarUtama' => $latarUtama,
+            'modePratinjau' => true,
+        ]);
+    }
+
+    /**
+     * Mengunggah satu atau beberapa foto latar apa adanya (PNG, JPG, JPEG, WEBP).
      */
     public function unggah(Request $request): RedirectResponse|JsonResponse
     {
@@ -116,7 +161,6 @@ class LatarBerandaController extends Controller
             foreach ($files as $file) {
                 $urutanTertinggi++;
 
-                // Hitung rasio asli (tinggi / lebar) sebelum file dipindahkan
                 $rasio = 1.00000;
                 $ukuranGambar = @getimagesize($file->getRealPath());
                 if (is_array($ukuranGambar) && !empty($ukuranGambar[0]) && !empty($ukuranGambar[1])) {
@@ -127,7 +171,6 @@ class LatarBerandaController extends Controller
                     }
                 }
 
-                // Simpan file asli dengan nama acak di disk public folder latar
                 $ekstensi = strtolower($file->getClientOriginalExtension() ?: 'png');
                 $namaAcak = Str::random(32) . '.' . $ekstensi;
                 $path = $file->storeAs('latar', $namaAcak, 'public');
@@ -154,7 +197,7 @@ class LatarBerandaController extends Controller
                 $hasilUnggah[] = [
                     'id' => (int) $foto->id,
                     'url' => $foto->url,
-                    'nama_asli' => $foto->nama_asli,
+                    'nama_asli' => $foto->nama_asli ?: ('Foto #' . $foto->id),
                     'rasio' => (float) $foto->rasio,
                     'urutan' => (int) $foto->urutan,
                     'aktif' => (bool) $foto->aktif,
@@ -183,14 +226,7 @@ class LatarBerandaController extends Controller
     }
 
     /**
-     * Menyimpan perubahan semua foto latar sekaligus (aktif, urutan, jangkar, koordinat Laptop & HP).
-     * Menerima data form biasa maupun JSON (agar endpoint ini dipakai ulang oleh editor 6B).
-     * Aturan validasi:
-     * - id foto harus ada dan berarea 'utama'
-     * - jangkar dalam ('atas', 'bawah')
-     * - x: -50..150, y: -50..1500, lebar: 3..200, rot: -180..180
-     * - hp_jangkar, hp_x, hp_y, hp_lebar, hp_rot: boleh null, tetapi kelimanya harus null semua
-     *   atau terisi bersamaan.
+     * Menyimpan perubahan semua foto latar sekaligus.
      */
     public function simpan(Request $request): RedirectResponse|JsonResponse
     {
@@ -309,7 +345,7 @@ class LatarBerandaController extends Controller
             }
         });
 
-        $pesanSukses = 'Pengaturan latar belakang halaman calon penghuni berhasil diterapkan.';
+        $pesanSukses = 'Susunan latar belakang berhasil diterapkan ke halaman calon penghuni.';
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -322,7 +358,7 @@ class LatarBerandaController extends Controller
     }
 
     /**
-     * Menghapus satu foto latar dari disk public dan database (khusus area 'utama').
+     * Menghapus permanen satu foto latar dari disk public dan database.
      */
     public function hapus(Request $request, LatarFoto $foto): RedirectResponse|JsonResponse
     {
@@ -342,7 +378,7 @@ class LatarBerandaController extends Controller
             }
         });
 
-        $pesanSukses = 'Foto latar belakang berhasil dihapus.';
+        $pesanSukses = 'Foto latar belakang berhasil dihapus permanen.';
 
         if ($request->expectsJson()) {
             return response()->json(['message' => $pesanSukses]);
@@ -352,8 +388,7 @@ class LatarBerandaController extends Controller
     }
 
     /**
-     * Menonaktifkan semua foto pada area 'utama' tanpa menghapus file agar halaman publik
-     * kembali ke tampilan polos tanpa latar belakang.
+     * Menonaktifkan semua foto pada area 'utama' tanpa menghapus file.
      */
     public function reset(Request $request): RedirectResponse|JsonResponse
     {
@@ -368,9 +403,6 @@ class LatarBerandaController extends Controller
         return redirect()->route('pengelola.latar')->with('success', $pesanSukses);
     }
 
-    /**
-     * Memeriksa apakah angka x, y, lebar, dan rotasi berada dalam rentang yang diizinkan.
-     */
     private function angkaDalamRentang(mixed $x, mixed $y, mixed $lebar, mixed $rot): bool
     {
         if (!is_numeric($x) || !is_numeric($y) || !is_numeric($lebar) || !is_numeric($rot)) {

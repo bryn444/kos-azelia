@@ -1,6 +1,6 @@
 <?php
 /**
- * NAMA FILE: routes/web.php (DITAMBAHKAN TAHAP 5A)
+ * NAMA FILE: routes/web.php
  * FUNGSI: Mendefinisikan seluruh rute aplikasi (Publik, Auth, Pengelola, Pemilik).
  * CARA MENGUBAH: Tambahkan rute baru di dalam grup middleware yang sesuai.
  */
@@ -10,6 +10,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\Pengelola\BerandaController;
 use App\Http\Controllers\Pengelola\KamarController;
+use App\Http\Controllers\Pengelola\LatarBerandaController;
 use App\Http\Controllers\Pengelola\PenghuniController;
 use App\Http\Controllers\Pengelola\PembayaranController;
 use App\Http\Controllers\Pengelola\TambahanWaktuController;
@@ -42,14 +43,16 @@ Route::middleware(['auth'])->group(function () {
 // 3. Rute Panel Pengelola (Kakek)
 Route::middleware(['auth', 'isPengelola'])->prefix('pengelola')->name('pengelola.')->group(function () {
     Route::get('/beranda', [BerandaController::class, 'index'])->name('beranda');
-    
-    // DITAMBAHKAN TAHAP 6A: Route pengelolaan latar belakang halaman calon penghuni
-    Route::get('/latar-beranda', [\App\Http\Controllers\Pengelola\LatarBerandaController::class, 'index'])->name('latar');
-    Route::post('/latar-beranda/unggah', [\App\Http\Controllers\Pengelola\LatarBerandaController::class, 'unggah'])->name('latar.unggah');
-    Route::post('/latar-beranda/simpan', [\App\Http\Controllers\Pengelola\LatarBerandaController::class, 'simpan'])->name('latar.simpan');
-    Route::post('/latar-beranda/{foto}/hapus', [\App\Http\Controllers\Pengelola\LatarBerandaController::class, 'hapus'])->name('latar.hapus');
-    Route::post('/latar-beranda/reset', [\App\Http\Controllers\Pengelola\LatarBerandaController::class, 'reset'])->name('latar.reset');
 
+    // Route pengelolaan latar belakang halaman calon penghuni
+    Route::get('/latar-beranda', [LatarBerandaController::class, 'index'])->name('latar');
+    Route::post('/latar-beranda/unggah', [LatarBerandaController::class, 'unggah'])->name('latar.unggah');
+    Route::post('/latar-beranda/simpan', [LatarBerandaController::class, 'simpan'])->name('latar.simpan');
+    Route::delete('/latar-beranda/{foto}/hapus', [LatarBerandaController::class, 'hapus'])->name('latar.hapus');
+    Route::post('/latar-beranda/reset', [LatarBerandaController::class, 'reset'])->name('latar.reset');
+
+    // Halaman pratinjau publik khusus di dalam iframe editor pengelola
+    Route::get('/latar-beranda/pratinjau', [LatarBerandaController::class, 'pratinjau'])->name('latar.pratinjau');
 
     // Modul Kamar
     Route::get('/kamar', [KamarController::class, 'index'])->name('kamar');
@@ -57,8 +60,8 @@ Route::middleware(['auth', 'isPengelola'])->prefix('pengelola')->name('pengelola
     Route::post('/kamar/tambah', [KamarController::class, 'store'])->name('kamar.store');
     Route::get('/kamar/{kamar}/ubah', [KamarController::class, 'edit'])->name('kamar.edit');
     Route::post('/kamar/{kamar}/ubah', [KamarController::class, 'update'])->name('kamar.update');
-    
-    // DITAMBAHKAN TAHAP 5A: Rute manajemen foto kamar
+
+    // Rute manajemen foto kamar
     Route::post('/kamar/{kamar}/foto/{foto}/hapus', [KamarController::class, 'hapusFoto'])->name('kamar.foto.hapus');
     Route::post('/kamar/{kamar}/foto/{foto}/sampul', [KamarController::class, 'jadikanSampul'])->name('kamar.foto.sampul');
 

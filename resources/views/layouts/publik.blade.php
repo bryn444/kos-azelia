@@ -4,6 +4,10 @@
   HALAMAN: Seluruh halaman publik calon penghuni.
   CARA MENGUBAH: Ubah menu navigasi atau tautan footer di bawah ini.
 --}}
+@php
+    // DITAMBAHKAN TAHAP 6B: Penanda apakah halaman sedang dibuka di dalam iframe editor pengelola
+    $sedangPratinjau = !empty($modePratinjau);
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -13,9 +17,17 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/publik.css') }}">
+    @if ($sedangPratinjau)
+        {{-- DITAMBAHKAN TAHAP 6B: Sembunyikan scrollbar di dalam iframe agar tinggi diukur murni oleh panggung editor --}}
+        <style>
+            html, body {
+                overflow: hidden !important;
+            }
+        </style>
+    @endif
     @yield('styles')
 </head>
-<body>
+<body class="{{ $sedangPratinjau ? 'mode-pratinjau-latar' : '' }}">
 
     {{-- DITAMBAHKAN TAHAP 6A: Kanvas latar belakang utama sebagai anak langsung <body> --}}
     @include('publik.partials.latar-kanvas')
@@ -68,5 +80,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     @yield('scripts')
+    @if ($sedangPratinjau)
+        {{-- DITAMBAHKAN TAHAP 6B: Skrip sinkronisasi kanvas & tinggi halaman dengan editor pengelola --}}
+        <script src="{{ asset('js/latar-kanvas.js') }}"></script>
+    @endif
 </body>
 </html>

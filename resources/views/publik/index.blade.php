@@ -1,7 +1,7 @@
 {{-- 
   NAMA FILE: resources/views/publik/index.blade.php
   FUNGSI: Halaman utama beranda publik dengan slider hero unggulan, fasilitas, dan informasi kos.
-  HALAMAN: Halaman Utama (/).
+  HALAMAN: Halaman Utama (/) dan Pratinjau Editor Pengelola (/pengelola/latar-beranda/pratinjau).
   CARA MENGUBAH: Sesuaikan urutan seksi atau teks pada file ini.
 --}}
 @extends('layouts.publik')
@@ -9,7 +9,41 @@
 @section('title', 'Kos Azelia - Beranda Kos Putri')
 
 @section('content')
-<div class="container my-4">
+@php
+    $daftarLatarPublik = $latarUtama ?? [];
+@endphp
+
+<div id="latar-kanvas" class="latar-kanvas" aria-hidden="true">
+    @foreach($daftarLatarPublik as $lf)
+        @php
+            $lap = $lf['laptop'] ?? ['jangkar' => 'atas', 'x' => 50, 'y' => 40, 'lebar' => 30, 'rot' => 0];
+            $hp = $lf['hp'] ?? $lap;
+            $kelasJangkarLap = ($lap['jangkar'] ?? 'atas') === 'bawah' ? 'lap-bawah' : 'lap-atas';
+            $kelasJangkarHp = ($hp['jangkar'] ?? $lap['jangkar'] ?? 'atas') === 'bawah' ? 'hp-bawah' : 'hp-atas';
+            $styleLatar = sprintf(
+                '--lap-x:%s;--lap-y:%s;--lap-lebar:%s;--lap-rot:%s;--hp-x:%s;--hp-y:%s;--hp-lebar:%s;--hp-rot:%s;z-index:%d;',
+                $lap['x'],
+                $lap['y'],
+                $lap['lebar'],
+                $lap['rot'],
+                $hp['x'],
+                $hp['y'],
+                $hp['lebar'],
+                $hp['rot'],
+                (int) ($lf['urutan'] ?? 1)
+            );
+        @endphp
+        <img
+            src="{{ $lf['url'] }}"
+            alt=""
+            class="latar-foto {{ $kelasJangkarLap }} {{ $kelasJangkarHp }}"
+            data-foto-id="{{ $lf['id'] }}"
+            style="{{ $styleLatar }}"
+        >
+    @endforeach
+</div>
+
+<div class="container my-4" data-mode-pratinjau="{{ !empty($modePratinjau) ? '1' : '0' }}">
     
     {{-- ===== BAGIAN: 2. HERO BERGAYA REFERENSI DENGAN SLIDER UNGGULAN ===== --}}
     <div class="blok-hero position-relative p-4 p-md-5 mb-5" id="heroSliderContainer">
@@ -208,4 +242,7 @@
 
 @section('scripts')
 <script src="{{ asset('js/publik.js') }}"></script>
+@if(!empty($modePratinjau))
+<script src="{{ asset('js/latar-kanvas.js') }}"></script>
+@endif
 @endsection

@@ -1,355 +1,219 @@
-{{--
-  NAMA FILE: resources/views/pengelola/latar/index.blade.php
-  FUNGSI: Halaman pengelola sederhana (Tahap 6A) untuk mengunggah foto latar belakang,
-          mengatur saklar tampil, urutan lapisan, jangkar atas/bawah, serta angka posisi Laptop & HP.
-  HALAMAN: Panel Pengelola -> Atur Latar Belakang (`/pengelola/latar-beranda`).
-  CARA MENGUBAH:
-  - Halaman ini bersifat sementara (akan diganti editor visual ala Canva pada Tahap 6B).
-  - Tinggi tombol utama minimal 60px agar mudah ditekan di layar sentuh maupun desktop.
---}}
 @extends('layouts.panel.main')
 
 @section('title', 'Atur Latar Belakang')
 
 @section('styles')
-<style>
-    /* Gaya halaman 6A memakai variabel panel.css yang sudah ada */
-    .latar-6a-kartu {
-        background: var(--panel-surface, #ffffff);
-        border: 1px solid var(--panel-border, #dce3ec);
-        border-radius: 16px;
-        padding: 1.25rem;
-        margin-bottom: 1.25rem;
-    }
-
-    .latar-6a-tombol {
-        min-height: 60px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        font-weight: 600;
-        padding: 0.75rem 1.25rem;
-        border-radius: 12px;
-    }
-
-    .latar-6a-thumb {
-        width: 112px;
-        height: 84px;
-        object-fit: contain;
-        border-radius: 10px;
-        border: 1px solid var(--panel-border, #dce3ec);
-        background: var(--panel-bg, #f4f6f9);
-        padding: 4px;
-    }
-
-    .latar-6a-grid {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 0.65rem;
-    }
-
-    @media (max-width: 991.98px) {
-        .latar-6a-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-</style>
+    <link rel="stylesheet" href="{{ asset('css/latar-editor.css') }}">
 @endsection
 
 @section('content')
-{{-- ===== BAGIAN: HEADER HALAMAN ===== --}}
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-    <div>
-        <h1 class="h4 mb-1">Atur Latar Belakang Halaman Calon Penghuni</h1>
-        <p class="text-muted small mb-0">
-            Susun foto elemen latar belakang halaman publik (Tahap 6A).
-        </p>
-    </div>
-    <div class="d-flex flex-wrap gap-2">
-        <a
-            href="{{ route('pengelola.lainnya') }}"
-            class="btn btn-outline-secondary latar-6a-tombol"
-        >
-            Kembali ke Lainnya
-        </a>
-        <a
-            href="{{ route('publik.index') }}"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="btn btn-primary latar-6a-tombol"
-        >
-            Lihat Halaman Calon Penghuni
-        </a>
-    </div>
-</div>
+<div class="le-editor-pembungkus">
 
-{{-- ===== BAGIAN: PESAN NOTIFIKASI & ERROR ===== --}}
-@if (session('success'))
-    <div class="alert alert-success" role="alert">
-        {{ session('success') }}
-    </div>
-@endif
-
-@if (session('error'))
-    <div class="alert alert-danger" role="alert">
-        {{ session('error') }}
-    </div>
-@endif
-
-@if ($errors->any())
-    <div class="alert alert-danger" role="alert">
-        <ul class="mb-0">
-            @foreach ($errors->all() as $err)
-                <li>{{ $err }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
-
-{{-- ===== BAGIAN: FORM UPLOAD GAMBAR ===== --}}
-<div class="latar-6a-kartu">
-    <h2 class="h6 mb-2">Upload Gambar Latar</h2>
-    <p class="text-muted small mb-3">
-        Mendukung PNG transparan, WEBP, JPG, atau JPEG (maks. {{ $maksUkuranMb }} MB per file, maksimal {{ $maksFoto }} foto).
-        Transparansi gambar dipertahankan apa adanya.
-    </p>
-    <form
-        method="POST"
-        action="{{ route('pengelola.latar.unggah') }}"
-        enctype="multipart/form-data"
-        class="row g-3 align-items-end"
-    >
-        @csrf
-        <div class="col-md-8">
-            <label for="input-upload-latar" class="form-label">Pilih File Gambar</label>
-            <input
-                type="file"
-                id="input-upload-latar"
-                name="foto[]"
-                class="form-control"
-                accept="image/jpeg,image/png,image/webp"
-                multiple
-                required
-            >
-        </div>
-        <div class="col-md-4">
-            <button type="submit" class="btn btn-primary w-100 latar-6a-tombol">
-                Upload Gambar
+    {{-- ===== BAGIAN: BARIS KONTROL ATAS ===== --}}
+    <div class="le-toolbar-atas">
+        <div class="le-toolbar-kiri">
+            <input type="file" id="le-input-unggah" accept="image/png,image/jpeg,image/webp" multiple hidden>
+            <button type="button" id="le-btn-unggah" class="le-tombol-pil">
+                <span>+ Upload Gambar</span>
             </button>
         </div>
-    </form>
-</div>
 
-{{-- ===== BAGIAN: FORM PENGATURAN SUSUNAN FOTO ===== --}}
-<form
-    id="form-simpan-latar"
-    method="POST"
-    action="{{ route('pengelola.latar.simpan') }}"
->
-    @csrf
-
-    <div class="latar-6a-kartu">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="h6 mb-0">Daftar Foto Latar ({{ $daftarFoto->count() }}/{{ $maksFoto }})</h2>
-        </div>
-
-        @if ($daftarFoto->isEmpty())
-            <div class="alert alert-info mb-0" role="status">
-                Belum ada foto latar. Klik Upload Gambar untuk memulai.
+        <div class="le-toolbar-kanan">
+            <div class="le-saklar-perangkat" role="group" aria-label="Pilih pratinjau perangkat">
+                <button type="button" class="le-tombol-perangkat aktif" data-perangkat="laptop">Laptop</button>
+                <button type="button" class="le-tombol-perangkat" data-perangkat="hp">HP</button>
             </div>
-        @else
-            @foreach ($daftarFoto as $idx => $foto)
-                <div class="border rounded-3 p-3 mb-3">
-                    <input type="hidden" name="foto[{{ $idx }}][id]" value="{{ $foto->id }}">
 
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <img
-                                src="{{ $foto->url }}"
-                                alt="{{ $foto->nama_asli ?? 'Foto latar' }}"
-                                class="latar-6a-thumb"
-                            >
-                            <div>
-                                <div class="fw-semibold">{{ $foto->nama_asli ?? ('Foto #' . $foto->id) }}</div>
-                                <div class="text-muted small">
-                                    ID #{{ $foto->id }} &bull; Rasio: {{ number_format((float) $foto->rasio, 3) }}
-                                </div>
+            <button type="button" id="le-btn-urungkan" class="le-tombol-sekunder" disabled title="Ctrl+Z">Urungkan</button>
+            <button type="button" id="le-btn-ulangi" class="le-tombol-sekunder" disabled title="Ctrl+Y">Ulangi</button>
+
+            <button type="button" id="le-btn-apply" class="le-tombol-sekunder" title="Kunci perubahan posisi ke pratinjau">Apply</button>
+            <button type="button" id="le-btn-terapkan" class="le-tombol-terapkan">Terapkan</button>
+
+            <a href="{{ route('publik.index') }}" target="_blank" rel="noopener noreferrer" class="le-tombol-sekunder">
+                Lihat Halaman Calon Penghuni ↗
+            </a>
+        </div>
+    </div>
+
+    {{-- ===== BAGIAN: BANNER STATUS & PETUNJUK SINGKAT ===== --}}
+    <div id="le-banner-belum-simpan" class="le-banner-status peringatan">
+        Ada perubahan yang belum diterapkan. Klik "Apply" untuk mengunci ke pratinjau, lalu klik "Terapkan" agar tampil di halaman calon penghuni.
+    </div>
+
+    <div id="le-banner-pesan" class="le-banner-status" role="status"></div>
+
+    <div class="le-petunjuk-singkat">
+        <p>1. Klik foto untuk memilih.</p>
+        <p>2. Tarik untuk menggeser, sudut untuk ukuran, tombol bulat di bawah foto untuk memutar.</p>
+        <p>3. Klik Apply untuk mengunci posisi di pratinjau, lalu tekan Terapkan.</p>
+    </div>
+
+    {{-- ===== BAGIAN: AREA KERJA DUA KOLOM ===== --}}
+    <div class="le-area-kerja">
+
+        {{-- KOLOM KIRI: PANGGUNG PRATINJAU --}}
+        <div id="le-panggung" class="le-panggung">
+            <div id="le-kosong-panggung" class="le-kosong-panggung" hidden>
+                Belum ada foto latar. Klik <strong>Upload Gambar</strong> di kiri atas untuk menambahkan hiasan.
+            </div>
+
+            <div id="le-wadah-skala" class="le-wadah-skala">
+                <iframe
+                    id="le-iframe-pratinjau"
+                    class="le-iframe-pratinjau"
+                    src="{{ route('pengelola.latar.pratinjau') }}"
+                    title="Pratinjau halaman calon penghuni"
+                    sandbox="allow-same-origin allow-scripts"
+                ></iframe>
+
+                <div id="le-overlay-kanvas" class="le-overlay-kanvas" tabindex="0" aria-label="Kanvas editor latar">
+                    <div id="le-garis-tengah" class="le-garis-tengah"></div>
+
+                    <div id="le-kotak-terpilih" class="le-kotak-terpilih">
+                        <img id="le-gambar-terpilih" class="le-gambar-terpilih" src="" alt="">
+                        <div class="le-bingkai-ungu"></div>
+                        <div class="le-pegangan-sudut" data-sudut="tl" title="Ubah ukuran"></div>
+                        <div class="le-pegangan-sudut" data-sudut="tr" title="Ubah ukuran"></div>
+                        <div class="le-pegangan-sudut" data-sudut="bl" title="Ubah ukuran"></div>
+                        <div class="le-pegangan-sudut" data-sudut="br" title="Ubah ukuran"></div>
+                        <div id="le-pegangan-putar" class="le-pegangan-putar" title="Tahan dan tarik untuk memutar">
+                            <div class="le-pegangan-putar-lingkaran">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                    <path d="M21 12a9 9 0 1 1-3-6.7L21 8"></path>
+                                    <path d="M21 3v5h-5"></path>
+                                </svg>
                             </div>
                         </div>
-
-                        <div class="d-flex flex-wrap align-items-center gap-3">
-                            <div class="form-check form-switch m-0">
-                                <input type="hidden" name="foto[{{ $idx }}][aktif]" value="0">
-                                <input
-                                    class="form-check-input"
-                                    type="checkbox"
-                                    role="switch"
-                                    id="aktif-foto-{{ $foto->id }}"
-                                    name="foto[{{ $idx }}][aktif]"
-                                    value="1"
-                                    {{ $foto->aktif ? 'checked' : '' }}
-                                >
-                                <label class="form-check-label" for="aktif-foto-{{ $foto->id }}">
-                                    Tampilkan
-                                </label>
-                            </div>
-
-                            <div style="width: 110px;">
-                                <label class="form-label small mb-1" for="urutan-foto-{{ $foto->id }}">Urutan</label>
-                                <input
-                                    type="number"
-                                    id="urutan-foto-{{ $foto->id }}"
-                                    name="foto[{{ $idx }}][urutan]"
-                                    value="{{ (int) $foto->urutan }}"
-                                    min="0"
-                                    class="form-control form-control-sm"
-                                >
-                            </div>
-
-                            <button
-                                type="button"
-                                class="btn btn-outline-danger btn-sm btn-hapus-foto"
-                                data-hapus-url="{{ route('pengelola.latar.hapus', ['foto' => $foto->id]) }}"
-                            >
-                                Hapus
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- Susunan Laptop --}}
-                    <div class="mb-3">
-                        <div class="small fw-semibold mb-1">
-                            Susunan Laptop (X: -50..150 | Y: -50..1500 | Lebar: 3..200 cqw | Rotasi: -180..180°)
-                        </div>
-                        <div class="latar-6a-grid">
-                            <div>
-                                <label class="form-label small mb-1">Jangkar</label>
-                                <select name="foto[{{ $idx }}][jangkar]" class="form-select form-select-sm" required>
-                                    <option value="atas" {{ $foto->jangkar === 'atas' ? 'selected' : '' }}>Atas</option>
-                                    <option value="bawah" {{ $foto->jangkar === 'bawah' ? 'selected' : '' }}>Bawah</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="form-label small mb-1">X (cqw)</label>
-                                <input type="number" step="0.01" min="-50" max="150" name="foto[{{ $idx }}][lap_x]" value="{{ $foto->lap_x }}" class="form-control form-control-sm" required>
-                            </div>
-                            <div>
-                                <label class="form-label small mb-1">Y (cqw)</label>
-                                <input type="number" step="0.01" min="-50" max="1500" name="foto[{{ $idx }}][lap_y]" value="{{ $foto->lap_y }}" class="form-control form-control-sm" required>
-                            </div>
-                            <div>
-                                <label class="form-label small mb-1">Lebar (cqw)</label>
-                                <input type="number" step="0.01" min="3" max="200" name="foto[{{ $idx }}][lap_lebar]" value="{{ $foto->lap_lebar }}" class="form-control form-control-sm" required>
-                            </div>
-                            <div>
-                                <label class="form-label small mb-1">Rotasi (°)</label>
-                                <input type="number" step="0.01" min="-180" max="180" name="foto[{{ $idx }}][lap_rot]" value="{{ $foto->lap_rot }}" class="form-control form-control-sm" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Susunan HP --}}
-                    <div>
-                        <div class="small fw-semibold mb-1">
-                            Susunan HP (kosongkan semua bila ingin ikut Laptop)
-                        </div>
-                        <div class="latar-6a-grid">
-                            <div>
-                                <label class="form-label small mb-1">Jangkar HP</label>
-                                <select name="foto[{{ $idx }}][hp_jangkar]" class="form-select form-select-sm">
-                                    <option value="" {{ $foto->hp_jangkar === null ? 'selected' : '' }}>Ikut laptop</option>
-                                    <option value="atas" {{ $foto->hp_jangkar === 'atas' ? 'selected' : '' }}>Atas</option>
-                                    <option value="bawah" {{ $foto->hp_jangkar === 'bawah' ? 'selected' : '' }}>Bawah</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="form-label small mb-1">HP X (cqw)</label>
-                                <input type="number" step="0.01" min="-50" max="150" name="foto[{{ $idx }}][hp_x]" value="{{ $foto->hp_x }}" placeholder="Ikut laptop" class="form-control form-control-sm">
-                            </div>
-                            <div>
-                                <label class="form-label small mb-1">HP Y (cqw)</label>
-                                <input type="number" step="0.01" min="-50" max="1500" name="foto[{{ $idx }}][hp_y]" value="{{ $foto->hp_y }}" placeholder="Ikut laptop" class="form-control form-control-sm">
-                            </div>
-                            <div>
-                                <label class="form-label small mb-1">HP Lebar (cqw)</label>
-                                <input type="number" step="0.01" min="3" max="200" name="foto[{{ $idx }}][hp_lebar]" value="{{ $foto->hp_lebar }}" placeholder="Ikut laptop" class="form-control form-control-sm">
-                            </div>
-                            <div>
-                                <label class="form-label small mb-1">HP Rotasi (°)</label>
-                                <input type="number" step="0.01" min="-180" max="180" name="foto[{{ $idx }}][hp_rot]" value="{{ $foto->hp_rot }}" placeholder="Ikut laptop" class="form-control form-control-sm">
-                            </div>
-                        </div>
+                        <div id="le-label-derajat" class="le-label-derajat">0°</div>
                     </div>
                 </div>
-            @endforeach
-        @endif
-    </div>
-
-    {{-- ===== BAGIAN: TOMBOL AKSI BAWAH ===== --}}
-    <div class="latar-6a-kartu">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <button type="submit" class="btn btn-primary w-100 latar-6a-tombol">
-                    Terapkan
-                </button>
-            </div>
-            <div class="col-md-6">
-                <button
-                    type="button"
-                    id="btn-reset-latar"
-                    class="btn btn-outline-secondary w-100 latar-6a-tombol"
-                    data-reset-url="{{ route('pengelola.latar.reset') }}"
-                >
-                    Kembalikan ke Tampilan Tanpa Latar
-                </button>
             </div>
         </div>
-    </div>
-</form>
 
-{{-- Form POST tersembunyi untuk aksi Hapus dan Reset --}}
-<form id="form-aksi-tunggal" method="POST" action="" class="d-none">
-    @csrf
-</form>
+        {{-- KOLOM KANAN: PANEL EDIT + TABEL GAMBAR TERUPLOAD --}}
+        <div class="le-kolom-kanan">
+            <aside class="le-panel-edit" aria-label="Panel pengaturan posisi latar">
+                <h2 class="le-judul-panel-edit">edit</h2>
+
+                <div class="le-kartu-posisi">
+                    <div class="le-header-kartu-posisi">
+                        <h3>Posisi</h3>
+                        <button type="button" id="le-btn-batal-pilih" class="le-tombol-tutup" title="Batalkan pilihan foto">✕</button>
+                    </div>
+
+                    <div class="le-tab-bar" role="tablist">
+                        <button type="button" class="le-tab-btn aktif" data-tab="atur" role="tab">Atur</button>
+                        <button type="button" class="le-tab-btn" data-tab="lapisan" role="tab">Lapisan</button>
+                    </div>
+
+                    {{-- ===== BAGIAN: TAB ATUR ===== --}}
+                    <div id="le-tab-atur" class="le-isi-tab aktif">
+                        <div class="le-grid-2">
+                            <button type="button" class="le-tombol-panel" data-aksi="maju">Maju</button>
+                            <button type="button" class="le-tombol-panel" data-aksi="mundur">Mundur</button>
+                            <button type="button" class="le-tombol-panel" data-aksi="paling-depan">Ke paling depan</button>
+                            <button type="button" class="le-tombol-panel" data-aksi="paling-belakang">Ke paling belakang</button>
+                        </div>
+
+                        <div class="le-subjudul-panel">Ukuran dan Putaran</div>
+                        <div class="le-grid-2">
+                            <button type="button" class="le-tombol-panel" data-aksi="perkecil">Perkecil</button>
+                            <button type="button" class="le-tombol-panel" data-aksi="perbesar">Perbesar</button>
+                            <button type="button" class="le-tombol-panel" data-aksi="putar-kiri">Putar Kiri</button>
+                            <button type="button" class="le-tombol-panel" data-aksi="putar-kanan">Putar Kanan</button>
+                            <button type="button" class="le-tombol-panel" data-aksi="luruskan">Luruskan</button>
+                            <button type="button" class="le-tombol-panel" data-aksi="pusatkan">Pusatkan</button>
+                        </div>
+
+                        <div class="le-subjudul-panel">Posisi pada halaman</div>
+                        <div class="le-grid-2">
+                            <button type="button" class="le-tombol-panel" data-aksi="jangkar-atas">Tempel ke atas halaman</button>
+                            <button type="button" class="le-tombol-panel" data-aksi="jangkar-bawah">Tempel ke bawah halaman</button>
+                            <button type="button" id="le-btn-tampil-sembunyi" class="le-tombol-panel" data-aksi="toggle-aktif">Sembunyikan</button>
+                            <button type="button" class="le-tombol-panel bahaya" data-aksi="hapus">Hapus</button>
+                        </div>
+
+                        <div id="le-kontrol-khusus-hp" hidden>
+                            <div class="le-subjudul-panel">Pengaturan Khusus HP</div>
+                            <div class="le-grid-2">
+                                <button type="button" class="le-tombol-panel" data-aksi="salin-laptop">Salin dari Laptop</button>
+                                <button type="button" class="le-tombol-panel" data-aksi="hp-ikut-laptop">HP Ikut Laptop</button>
+                            </div>
+                            <div id="le-status-hp" class="le-badge-mode-hp">HP: ikut laptop</div>
+                        </div>
+
+                        <div class="le-info-angka" aria-label="Koordinat foto terpilih">
+                            <div><span>X</span><strong id="le-val-x">-</strong></div>
+                            <div><span>Y</span><strong id="le-val-y">-</strong></div>
+                            <div><span>Lebar</span><strong id="le-val-lebar">-</strong></div>
+                            <div><span>Rotasi</span><strong id="le-val-rotasi">-</strong></div>
+                        </div>
+                    </div>
+
+                    {{-- ===== BAGIAN: TAB LAPISAN ===== --}}
+                    <div id="le-tab-lapisan" class="le-isi-tab">
+                        <div id="le-daftar-lapisan" class="le-daftar-lapisan"></div>
+                    </div>
+
+                    {{-- ===== BAGIAN: TOMBOL BATAL & RESET BAWAH ===== --}}
+                    <div class="le-footer-panel">
+                        <button type="button" id="le-btn-batalkan-perubahan" class="le-tombol-panel">
+                            Batalkan Perubahan
+                        </button>
+                        <button type="button" id="le-btn-reset-total" class="le-tombol-panel bahaya">
+                            Kembalikan ke Tampilan Tanpa Latar
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            {{-- ===== BAGIAN: TABEL GAMBAR YANG TELAH TERUPLOAD ===== --}}
+            <section class="le-kartu-galeri" aria-label="Daftar gambar yang telah terupload">
+                <div class="le-header-galeri">
+                    <h3>Gambar Terupload</h3>
+                    <span id="le-jumlah-gambar" class="le-badge-jumlah">0</span>
+                </div>
+
+                <div class="le-wadah-tabel-gambar">
+                    <table class="le-tabel-gambar">
+                        <thead>
+                            <tr>
+                                <th>Foto</th>
+                                <th>Nama & Posisi</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="le-tbody-gambar">
+                            <tr>
+                                <td colspan="3" style="text-align:center; color:#64748b; padding:14px;">
+                                    Belum ada gambar yang diupload.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+{{-- Data awal dan URL endpoint untuk JavaScript --}}
+@php
+    $_leDataAwal = [
+        'foto' => $dataAwalEditor ?? [],
+        'maksFoto' => $maksFoto ?? 15,
+        'maksUkuranMb' => $maksUkuranMb ?? 3,
+        'urlUnggah' => route('pengelola.latar.unggah'),
+        'urlSimpan' => route('pengelola.latar.simpan'),
+        'urlReset' => route('pengelola.latar.reset'),
+        'urlHapusTemplate' => route('pengelola.latar.hapus', ['foto' => '__ID__']),
+        'csrfToken' => csrf_token(),
+    ];
+@endphp
+<script id="le-data-awal" type="application/json">{!! json_encode($_leDataAwal) !!}</script>
 @endsection
 
 @section('scripts')
-<script>
-    (function () {
-        const formSimpan = document.getElementById('form-simpan-latar');
-        const btnReset = document.getElementById('btn-reset-latar');
-        const formAksi = document.getElementById('form-aksi-tunggal');
-
-        if (formSimpan) {
-            formSimpan.addEventListener('submit', function (event) {
-                if (!window.confirm('Terapkan perubahan latar belakang ke halaman calon penghuni?')) {
-                    event.preventDefault();
-                }
-            });
-        }
-
-        document.querySelectorAll('.btn-hapus-foto').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                const url = btn.getAttribute('data-hapus-url');
-                if (!url || !formAksi) return;
-                if (window.confirm('Hapus foto latar ini secara permanen?')) {
-                    formAksi.setAttribute('action', url);
-                    formAksi.submit();
-                }
-            });
-        });
-
-        if (btnReset && formAksi) {
-            btnReset.addEventListener('click', function () {
-                const url = btnReset.getAttribute('data-reset-url');
-                if (!url) return;
-                if (window.confirm('Kembalikan ke Tampilan Tanpa Latar? Semua foto akan dinonaktifkan (tidak dihapus).')) {
-                    formAksi.setAttribute('action', url);
-                    formAksi.submit();
-                }
-            });
-        }
-    })();
-</script>
+    <script src="{{ asset('js/latar-editor.js') }}"></script>
 @endsection
