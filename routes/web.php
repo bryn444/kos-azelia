@@ -43,6 +43,14 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'isPengelola'])->prefix('pengelola')->name('pengelola.')->group(function () {
     Route::get('/beranda', [BerandaController::class, 'index'])->name('beranda');
     
+    // DITAMBAHKAN TAHAP 6A: Route pengelolaan latar belakang halaman calon penghuni
+    Route::get('/latar-beranda', [\App\Http\Controllers\Pengelola\LatarBerandaController::class, 'index'])->name('latar');
+    Route::post('/latar-beranda/unggah', [\App\Http\Controllers\Pengelola\LatarBerandaController::class, 'unggah'])->name('latar.unggah');
+    Route::post('/latar-beranda/simpan', [\App\Http\Controllers\Pengelola\LatarBerandaController::class, 'simpan'])->name('latar.simpan');
+    Route::post('/latar-beranda/{foto}/hapus', [\App\Http\Controllers\Pengelola\LatarBerandaController::class, 'hapus'])->name('latar.hapus');
+    Route::post('/latar-beranda/reset', [\App\Http\Controllers\Pengelola\LatarBerandaController::class, 'reset'])->name('latar.reset');
+
+
     // Modul Kamar
     Route::get('/kamar', [KamarController::class, 'index'])->name('kamar');
     Route::get('/kamar/tambah', [KamarController::class, 'create'])->name('kamar.create');

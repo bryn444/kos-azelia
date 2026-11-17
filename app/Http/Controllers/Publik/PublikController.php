@@ -11,6 +11,7 @@ namespace App\Http\Controllers\Publik;
 use App\Http\Controllers\Controller;
 use App\Models\InformasiKos;
 use App\Models\Kamar;
+use App\Services\LatarBerandaService;
 use Illuminate\Http\Request;
 
 class PublikController extends Controller
@@ -18,7 +19,7 @@ class PublikController extends Controller
     /**
      * Menampilkan beranda publik dengan data kamar unggulan dan informasi kos
      */
-    public function index()
+    public function index(LatarBerandaService $latarBerandaService)
     {
         // Mengambil maksimal 5 kamar unggulan yang memiliki minimal 1 foto
         $kamarUnggulans = Kamar::with(['fotos', 'sampul'])
@@ -39,7 +40,10 @@ class PublikController extends Controller
         $informasis = InformasiKos::all();
         $tarifTermurah = Kamar::min('tarif') ?? 550000;
 
-        return view('publik.index', compact('kamarUnggulans', 'kamarLainnyas', 'informasis', 'tarifTermurah'));
+        // DITAMBAHKAN TAHAP 6A: Mengambil susunan foto latar aktif untuk halaman calon penghuni
+        $latarUtama = $latarBerandaService->untukPublik('utama');
+
+        return view('publik.index', compact('kamarUnggulans', 'kamarLainnyas', 'informasis', 'tarifTermurah', 'latarUtama'));
     }
 
     /**

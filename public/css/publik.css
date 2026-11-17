@@ -18,9 +18,15 @@
     --warna-garis: #E5E7EB;           /* Digunakan untuk garis pembatas border */
     --warna-footer-bg: #111418;       /* Digunakan untuk latar belakang footer */
     --warna-footer-teks: #9CA3AF;     /* Digunakan untuk teks di dalam footer */
+
+    /* DITAMBAHKAN TAHAP 6A: Variabel latar belakang halaman calon penghuni */
+    --latar-kanvas-bg: transparent;   /* Warna lapisan kanvas (transparan agar warna body tetap terlihat) */
 }
 
 body {
+    /* DITAMBAHKAN TAHAP 6A: Membentuk stacking context agar z-index: -1 kanvas berada di atas warna body dan di bawah konten */
+    position: relative;
+    z-index: 0;
     font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
     background-color: var(--warna-bg);
     color: var(--warna-teks-utama);
@@ -106,4 +112,75 @@ h1, h2, h3, h4, h5, h6 {
     scroll-snap-align: start;
     flex: 0 0 auto;
     width: 320px;
+}
+
+/* ==========================================
+   DITAMBAHKAN TAHAP 6A: KANVAS & FOTO LATAR BELAKANG HALAMAN
+   Penjelasan satuan cqw (Container Query Width):
+   - 1cqw = 1% dari lebar kanvas (.latar-kanvas).
+   - Contoh: pada layar selebar 1400px, x = 10 berarti 140px dari kiri;
+     y = 20 berarti 280px dari tepi atas/bawah; lebar = 25 berarti lebar foto 350px.
+   ========================================== */
+.latar-kanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    container-type: inline-size;
+    background-color: var(--latar-kanvas-bg);
+}
+
+.latar-foto {
+    --x: var(--lap-x);
+    --y: var(--lap-y);
+    --lebar: var(--lap-lebar);
+    --rot: var(--lap-rot);
+    --ty: -50%;
+
+    position: absolute;
+    left: calc(var(--x) * 1cqw);
+    width: calc(var(--lebar) * 1cqw);
+    height: auto;
+    max-width: none;
+    user-select: none;
+    transform: translate(-50%, var(--ty)) rotate(calc(var(--rot) * 1deg));
+}
+
+/* Jangkar susunan Laptop */
+.latar-foto.lap-atas {
+    top: calc(var(--y) * 1cqw);
+    bottom: auto;
+    --ty: -50%;
+}
+
+.latar-foto.lap-bawah {
+    bottom: calc(var(--y) * 1cqw);
+    top: auto;
+    --ty: 50%;
+}
+
+/* UBAH DI SINI: Breakpoint tampilan HP (berlaku pada lebar layar 767.98px ke bawah, misal 360px - 767px) */
+@media (max-width: 767.98px) {
+    .latar-foto {
+        --x: var(--hp-x);
+        --y: var(--hp-y);
+        --lebar: var(--hp-lebar);
+        --rot: var(--hp-rot);
+    }
+
+    .latar-foto.hp-atas {
+        top: calc(var(--y) * 1cqw);
+        bottom: auto;
+        --ty: -50%;
+    }
+
+    .latar-foto.hp-bawah {
+        bottom: calc(var(--y) * 1cqw);
+        top: auto;
+        --ty: 50%;
+    }
 }

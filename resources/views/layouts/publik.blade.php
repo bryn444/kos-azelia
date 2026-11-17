@@ -17,6 +17,9 @@
 </head>
 <body>
 
+    {{-- DITAMBAHKAN TAHAP 6A: Kanvas latar belakang utama sebagai anak langsung <body> --}}
+    @include('publik.partials.latar-kanvas')
+
     {{-- ===== BAGIAN: NAVBAR PUTIH ===== --}}
     <nav class="navbar navbar-expand-lg navbar-light bg-white py-3 shadow-sm sticky-top">
         <div class="container">
