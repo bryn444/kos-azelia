@@ -17,16 +17,33 @@ use Illuminate\Http\Request;
 class PublikController extends Controller
 {
     /**
-     * Menampilkan beranda publik dengan data kamar unggulan dan informasi kos
+     * Menampilkan beranda publik dengan satu kamar unggulan (beserta daftar fotonya)
+     * dan informasi kos.
+     * Alasan: Slider hero kini menggeser foto dari satu kamar unggulan terpilih, bukan berpindah antar kamar.
      */
     public function index(LatarBerandaService $latarBerandaService)
     {
-        // Mengambil maksimal 5 kamar unggulan yang memiliki minimal 1 foto
-        $kamarUnggulans = Kamar::with(['fotos', 'sampul'])
+        // DITAMBAHKAN TAHAP 7: Batas maksimal foto pada slider hero kamar unggulan
+        $maksFotoHero = 6;
+
+        // DITAMBAHKAN TAHAP 7: Mengambil kamar unggulan pertama (urut nomor_kamar naik) yang punya minimal 1 foto
+        $kamarHero = Kamar::with(['fotos', 'sampul'])
             ->unggulan()
             ->has('fotos')
-            ->take(5)
-            ->get();
+            ->orderBy('nomor_kamar', 'asc')
+            ->first();
+
+        // DITAMBAHKAN TAHAP 7: Menyiapkan maksimal 6 foto (url & teks alt) untuk slider hero kanan
+        $fotoHero = [];
+        if ($kamarHero) {
+            foreach ($kamarHero->fotos->take($maksFotoHero) as $idx => $foto) {
+                $keterangan = $foto->keterangan ?: ('Kamar ' . $kamarHero->nomor_kamar);
+                $fotoHero[] = [
+                    'url' => $foto->url,
+                    'alt' => $keterangan . ' - Foto ' . ($idx + 1),
+                ];
+            }
+        }
 
         // Mengambil kamar lainnya (non-unggulan, atau semua jika unggulan kosong)
         $kamarLainnyas = Kamar::with(['fotos', 'sampul'])
@@ -43,11 +60,19 @@ class PublikController extends Controller
         // DITAMBAHKAN TAHAP 6A: Mengambil susunan foto latar aktif untuk halaman calon penghuni
         $latarUtama = $latarBerandaService->untukPublik('utama');
 
-        return view('publik.index', compact('kamarUnggulans', 'kamarLainnyas', 'informasis', 'tarifTermurah', 'latarUtama'));
+        return view('publik.index', compact(
+            'kamarHero',
+            'fotoHero',
+            'kamarLainnyas',
+            'informasis',
+            'tarifTermurah',
+            'latarUtama'
+        ));
     }
 
     /**
-     * Menampilkan halaman detail spesifik kamar (Privasi terjaga tanpa data penghuni)
+     * Menampilkan halaman detail spesifik kamar (Privasi terjaga tanpa data penghuni).
+     * Alasan: Calon penghuni dapat melihat rincian kamar yang dipilih dari beranda.
      */
     public function showKamar(Kamar $kamar)
     {
@@ -56,7 +81,8 @@ class PublikController extends Controller
     }
 
     /**
-     * Menampilkan halaman Tanya Asisten
+     * Menampilkan halaman Tanya Asisten.
+     * Alasan: Merender form interaktif agar pengguna dapat mengajukan pertanyaan seputar kos.
      */
     public function tanyaAsistenForm()
     {
@@ -64,7 +90,8 @@ class PublikController extends Controller
     }
 
     /**
-     * Memproses pertanyaan pengguna dan mencocokkannya dengan tabel informasi_kos
+     * Memproses pertanyaan pengguna dan mencocokkannya dengan tabel informasi_kos.
+     * Alasan: Memberikan jawaban cepat dari data informasi kos yang tersedia di database.
      */
     public function tanyaAsistenProcess(Request $request)
     {
@@ -110,7 +137,8 @@ class PublikController extends Controller
     }
 
     /**
-     * Menampilkan halaman Hubungi Pengelola
+     * Menampilkan halaman Hubungi Pengelola.
+     * Alasan: Menyediakan akses kontak langsung ke pengelola kos.
      */
     public function hubungi()
     {

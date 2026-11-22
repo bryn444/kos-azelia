@@ -1,6 +1,6 @@
 {{-- 
   NAMA FILE: resources/views/publik/index.blade.php
-  FUNGSI: Halaman utama beranda publik dengan slider hero unggulan, fasilitas, dan informasi kos.
+  FUNGSI: Halaman utama beranda publik dengan hero kamar unggulan dan slider foto kamar, fasilitas, dan informasi kos.
   HALAMAN: Halaman Utama (/) dan Pratinjau Editor Pengelola (/pengelola/latar-beranda/pratinjau).
   CARA MENGUBAH: Sesuaikan urutan seksi atau teks pada file ini.
 --}}
@@ -13,6 +13,7 @@
     $daftarLatarPublik = $latarUtama ?? [];
 @endphp
 
+{{-- ===== BAGIAN: 1. KANVAS LATAR BELAKANG PUBLIK ===== --}}
 <div id="latar-kanvas" class="latar-kanvas" aria-hidden="true">
     @foreach($daftarLatarPublik as $lf)
         @php
@@ -44,46 +45,71 @@
 </div>
 
 <div class="container my-4" data-mode-pratinjau="{{ !empty($modePratinjau) ? '1' : '0' }}">
-    
-    {{-- ===== BAGIAN: 2. HERO BERGAYA REFERENSI DENGAN SLIDER UNGGULAN ===== --}}
-    <div class="blok-hero position-relative p-4 p-md-5 mb-5" id="heroSliderContainer">
-        @if($kamarUnggulans->isNotEmpty())
-            @foreach($kamarUnggulans as $index => $ku)
-                <div class="hero-slide row align-items-center g-4 {{ $index > 0 ? 'd-none' : '' }}" data-slide-index="{{ $index }}">
-                    <div class="col-lg-6 z-1 py-md-4">
-                        <span class="badge bg-white text-dark px-3 py-2 rounded-pill mb-3 fw-bold shadow-sm">KAMAR UNGGULAN</span>
-                   <!-- <h1 class="display-5 fw-bold text-white mb-3" style="text-shadow: 0 2px 4px rgba(9, 9, 9, 0.3);">Kamar {{ $ku->nomor_kamar }}</h1> -->
-                        <h1 class="display-5 fw-bold mb-3" style="color: #6c9fe1;" >Kamar {{ $ku->nomor_kamar }}</h1>
-                        <p class="text-white-50 fs-5 mb-4" style="text-shadow: 0 1px 2px rgb(0, 0, 0);">{{ $ku->deskripsi ?? 'Kamar putri eksklusif dengan fasilitas lengkap, bersih, dan nyaman.' }}</p>
-                        <div class="fs-4 fw-bold text-white mb-4">Rp{{ number_format($ku->tarif, 0, ',', '.') }} / bulan</div>
-                        <div class="d-flex flex-wrap gap-3">
-                            <a href="https://wa.me/{{ config('kos.whatsapp') }}?text={{ urlencode('Halo, saya ingin menanyakan ketersediaan Kamar ' . $ku->nomor_kamar . '.') }}" target="_blank" class="btn-pil-biru">Tanya Ketersediaan Kamar</a>
-                            <a href="{{ route('publik.kamar.show', $ku->id) }}" class="btn btn-light rounded-circle p-3 d-flex align-items-center justify-content-center shadow" style="width: 52px; height: 52px;" aria-label="Detail Kamar {{ $ku->nomor_kamar }}">→</a>
-                        </div>
-                    </div>
-                    <div class="col-lg-6 position-relative">
-                        <div style="height: 380px; border-radius: 24px; overflow: hidden;" class="shadow-sm position-relative">
-                            <img src="{{ $ku->sampul_url }}" alt="Kamar {{ $ku->nomor_kamar }}" class="w-100 h-100 object-fit-cover">
-                            <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.4) 100%);"></div>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
 
-            {{-- Navigasi Indikator Vertikal & Panah --}}
-            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top border-secondary border-opacity-25">
-                <div class="d-flex align-items-center gap-3">
-                    @foreach($kamarUnggulans as $index => $ku)
-                        <button type="button" class="hero-indikator btn btn-link p-0 text-white text-decoration-none fs-6 fw-bold {{ $index === 0 ? 'active text-primary' : 'text-opacity-50' }}" data-slide="{{ $index }}" aria-label="Slide {{ $index + 1 }}">0{{ $index + 1 }}</button>
-                    @endforeach
+    {{-- ===== BAGIAN: 2. HERO KAMAR UNGGULAN & SLIDER FOTO KAMAR ===== --}}
+    {{-- DITAMBAHKAN TAHAP 7: Hero menampilkan satu kamar unggulan ($kamarHero) dan menggeser foto-fotonya ($fotoHero) --}}
+    <div class="blok-hero position-relative p-4 p-md-5 mb-5" id="heroSliderContainer">
+        @if($kamarHero && !empty($fotoHero))
+            @php
+                $totalFotoHero = count($fotoHero);
+            @endphp
+            <div class="row align-items-center g-4">
+                {{-- ===== BAGIAN: 2A. TEKS & AKSI KAMAR UNGGULAN (TETAP) ===== --}}
+                <div class="col-lg-6 z-1 py-md-4">
+                    <span class="badge bg-white text-dark px-3 py-2 rounded-pill mb-3 fw-bold shadow-sm">KAMAR UNGGULAN</span>
+                    <h1 class="display-5 fw-bold hero-judul-kamar mb-3">Kamar {{ $kamarHero->nomor_kamar }}</h1>
+                    <p class="hero-deskripsi-kamar fs-5 mb-4">{{ $kamarHero->deskripsi ?? 'Kamar putri eksklusif dengan fasilitas lengkap, bersih, dan nyaman.' }}</p>
+                    <div class="fs-4 fw-bold hero-harga-kamar mb-4">Rp{{ number_format($kamarHero->tarif, 0, ',', '.') }} / bulan</div>
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="https://wa.me/{{ config('kos.whatsapp') }}?text={{ urlencode('Halo, saya ingin menanyakan ketersediaan Kamar ' . $kamarHero->nomor_kamar . '.') }}" target="_blank" class="btn-pil-biru">Tanya Ketersediaan Kamar</a>
+                        <a href="{{ route('publik.kamar.show', $kamarHero->id) }}" class="btn btn-light rounded-circle p-3 d-flex align-items-center justify-content-center shadow hero-tombol-detail" aria-label="Detail Kamar {{ $kamarHero->nomor_kamar }}">→</a>
+                    </div>
                 </div>
-                <div class="d-flex gap-2">
-                    <button type="button" id="heroPrev" class="btn btn-outline-light rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;" aria-label="Sebelumnya">←</button>
-                    <button type="button" id="heroNext" class="btn btn-outline-light rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;" aria-label="Berikutnya">→</button>
+
+                {{-- ===== BAGIAN: 2B. SLIDER FOTO KAMAR UNGGULAN ===== --}}
+                <div class="col-lg-6 position-relative">
+                    <div
+                        id="heroFotoSlider"
+                        class="hero-slider-bingkai position-relative shadow-sm"
+                        tabindex="0"
+                        role="region"
+                        aria-label="Galeri foto Kamar {{ $kamarHero->nomor_kamar }}"
+                    >
+                        @foreach($fotoHero as $idx => $itemFoto)
+                            <img
+                                src="{{ $itemFoto['url'] }}"
+                                alt="{{ $itemFoto['alt'] }}"
+                                loading="{{ $idx === 0 ? 'eager' : 'lazy' }}"
+                                class="hero-foto-slide {{ $idx === 0 ? 'aktif' : '' }}"
+                                data-foto-index="{{ $idx }}"
+                            >
+                        @endforeach
+
+                        <div class="hero-foto-gradasi"></div>
+
+                        @if($totalFotoHero > 1)
+                            <button type="button" id="heroFotoPrev" class="hero-foto-panah hero-foto-panah-kiri" aria-label="Foto sebelumnya">←</button>
+                            <button type="button" id="heroFotoNext" class="hero-foto-panah hero-foto-panah-kanan" aria-label="Foto berikutnya">→</button>
+
+                            <div class="hero-foto-hud">
+                                <span id="heroFotoPenanda" class="hero-foto-penanda" aria-live="polite">01 / {{ str_pad($totalFotoHero, 2, '0', STR_PAD_LEFT) }}</span>
+                                <div class="hero-foto-titik" role="tablist" aria-label="Pilih foto kamar">
+                                    @foreach($fotoHero as $idx => $itemFoto)
+                                        <button
+                                            type="button"
+                                            class="hero-foto-titik-btn {{ $idx === 0 ? 'aktif' : '' }}"
+                                            data-foto-titik="{{ $idx }}"
+                                            aria-label="Tampilkan foto {{ $idx + 1 }}"
+                                        ></button>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
         @else
-            {{-- Slide Bawaan Jika Belum Ada Kamar Unggulan --}}
+            {{-- ===== BAGIAN: 2C. TAMPILAN BAWAAN HERO TANPA KAMAR UNGGULAN BERFOTO ===== --}}
             <div class="row align-items-center g-4">
                 <div class="col-lg-7 py-md-4">
                     <h1 class="display-5 fw-bold text-dark mb-3">Tempat tinggal yang terasa seperti rumah</h1>
@@ -124,7 +150,7 @@
             </div>
         </div>
     </section>
-<!-- 
+
     {{-- ===== BAGIAN: 4. KAMAR LAINNYA (SLIDER HORIZONTAL) ===== --}}
     <section class="mb-5 py-4" id="kamar">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -133,8 +159,8 @@
                 <p class="text-muted mb-0">Pilih kamar yang paling cocok untukmu</p>
             </div>
             <div class="d-flex gap-2">
-                <button type="button" id="scrollKiri" class="btn btn-outline-dark rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;" aria-label="Geser Kiri">←</button>
-                <button type="button" id="scrollKanan" class="btn btn-outline-dark rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;" aria-label="Geser Kanan">→</button>
+                <button type="button" id="scrollKiri" class="btn btn-outline-dark rounded-circle p-2 d-flex align-items-center justify-content-center hero-tombol-geser" aria-label="Geser Kiri">←</button>
+                <button type="button" id="scrollKanan" class="btn btn-outline-dark rounded-circle p-2 d-flex align-items-center justify-content-center hero-tombol-geser" aria-label="Geser Kanan">→</button>
             </div>
         </div>
 
@@ -143,7 +169,7 @@
                 <div class="slider-item">
                     <a href="{{ route('publik.kamar.show', $kl->id) }}" class="text-decoration-none text-dark">
                         <div class="kartu-kamar h-100">
-                            <div style="height: 200px; background-color: #E5E7EB;" class="position-relative">
+                            <div class="kartu-kamar-media position-relative">
                                 <img src="{{ $kl->sampul_url }}" alt="Kamar {{ $kl->nomor_kamar }}" class="w-100 h-100 object-fit-cover">
                                 @if($kl->status === 'terisi')
                                     <span class="badge bg-secondary position-absolute top-0 end-0 m-3 px-3 py-2">Terisi</span>
@@ -161,7 +187,7 @@
                 </div>
             @endforeach
         </div>
-    </section> -->
+    </section>
 
     {{-- ===== BAGIAN: 5. CARA MENGEKOS JADI MUDAH ===== --}}
     <section class="my-5 py-5 bg-light rounded-4 p-4 p-md-5" id="cara">
@@ -178,7 +204,7 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="text-white p-4 rounded-4 shadow h-100 text-center" style="background-color: var(--warna-primer);">
+                <div class="text-white p-4 rounded-4 shadow h-100 text-center langkah-utama-card">
                     <div class="fs-1 fw-bold mb-3">2</div>
                     <h3 class="fw-bold fs-4 mb-2 text-white">Hubungi Pengelola</h3>
                     <p class="text-white-50 mb-4">Konsultasikan jadwal survei atau ketersediaan kamar via WhatsApp.</p>
@@ -205,7 +231,7 @@
             @forelse($informasis as $info)
                 @php $isAturan = str_contains(strtolower($info->kategori), 'aturan'); @endphp
                 <div class="col-md-6 col-lg-4">
-                    <div class="p-4 rounded-4 h-100 d-flex flex-column {{ $isAturan ? 'text-white' : 'border bg-light' }}" style="{{ $isAturan ? 'background-color: var(--warna-primer);' : '' }}">
+                    <div class="p-4 rounded-4 h-100 d-flex flex-column {{ $isAturan ? 'text-white kartu-aturan-kos' : 'border bg-light' }}">
                         <span class="badge {{ $isAturan ? 'bg-white text-dark' : 'bg-primary text-white' }} align-self-start mb-3 px-3 py-2 rounded-pill">{{ strtoupper($info->kategori) }}</span>
                         <h3 class="fw-bold fs-5 mb-2 {{ $isAturan ? 'text-white' : '' }}">{{ $info->judul }}</h3>
                         <p class="{{ $isAturan ? 'text-white-50' : 'text-muted' }} small mb-0 mt-auto">{{ $info->deskripsi }}</p>
@@ -221,8 +247,8 @@
     <section class="my-5 py-5 bg-white border rounded-4 p-4 p-md-5">
         <div class="row align-items-center g-5">
             <div class="col-lg-5">
-                <div style="height: 300px; border-radius: 20px; overflow: hidden;">
-                    <img src="{{ $kamarUnggulans->first()->sampul_url ?? asset('img/kamar-placeholder.svg') }}" alt="Kamar Kos Azelia" class="w-100 h-100 object-fit-cover">
+                <div class="cta-media-bingkai">
+                    <img src="{{ $kamarHero?->sampul_url ?? asset('img/kamar-placeholder.svg') }}" alt="Kamar Kos Azelia" class="w-100 h-100 object-fit-cover">
                 </div>
             </div>
             <div class="col-lg-7">

@@ -9,18 +9,38 @@
    PETA WARNA & VARIABEL GLOBAL (:root)
    ========================================== */
 :root {
-    --warna-bg: #ffffff;              /* Digunakan untuk latar belakang utama body */
-    --warna-teks-utama: #111418;      /* Digunakan untuk judul dan teks utama */
-    --warna-teks-sekunder: #6B7280;   /* Digunakan untuk deskripsi dan teks redup */
-    --warna-primer: #2F80ED;          /* Digunakan untuk tombol utama, badge, dan aksen */
-    --warna-primer-hover: #1F5FBF;    /* Digunakan saat tombol utama disentuh (hover) */
-    --warna-abu-muda: #F5F6F8;        /* Digunakan untuk latar kartu dan bagian abu */
-    --warna-garis: #E5E7EB;           /* Digunakan untuk garis pembatas border */
-    --warna-footer-bg: #111418;       /* Digunakan untuk latar belakang footer */
-    --warna-footer-teks: #9CA3AF;     /* Digunakan untuk teks di dalam footer */
+    --warna-bg: #ffffff;                  /* Digunakan untuk latar belakang utama body */
+    --warna-teks-utama: #111418;          /* Digunakan untuk judul dan teks utama */
+    --warna-teks-sekunder: #6B7280;       /* Digunakan untuk deskripsi dan teks redup */
+    --warna-primer: #2F80ED;              /* Digunakan untuk tombol utama, badge, dan aksen */
+    --warna-primer-hover: #1F5FBF;        /* Digunakan saat tombol utama disentuh (hover) */
+    --warna-abu-muda: #F5F6F8;            /* Digunakan untuk latar kartu dan bagian abu */
+    --warna-garis: #E5E7EB;               /* Digunakan untuk garis pembatas border */
+    --warna-footer-bg: #111418;           /* Digunakan untuk latar belakang footer */
+    --warna-footer-teks: #9CA3AF;         /* Digunakan untuk teks di dalam footer */
 
     /* DITAMBAHKAN TAHAP 6A: Variabel latar belakang halaman calon penghuni */
-    --latar-kanvas-bg: transparent;   /* Warna lapisan kanvas (transparan agar warna body tetap terlihat) */
+    --latar-kanvas-bg: transparent;       /* Warna lapisan kanvas (transparan agar warna body tetap terlihat) */
+
+    /* DITAMBAHKAN TAHAP 7: Variabel peta warna & ukuran slider foto hero */
+    --hero-blok-bg: #27425d9c;            /* Latar belakang blok hero utama */
+    --hero-judul-warna: #6c9fe1;          /* Warna judul kamar unggulan di hero */
+    --hero-deskripsi-warna: #f8fafc;      /* Warna deskripsi kamar unggulan di hero */
+    --hero-harga-warna: #ffffff;          /* Warna teks tarif bulanan kamar unggulan di hero */
+    --hero-panah-bg: #ffffff;             /* Warna latar tombol panah kiri/kanan slider foto */
+    --hero-panah-warna: #111418;          /* Warna ikon/teks panah kiri/kanan slider foto */
+    --hero-panah-border: #e5e7eb;         /* Warna garis tepi tombol panah slider foto */
+    --hero-hud-bg: #111418;               /* Warna latar penanda posisi "01 / 04" dan titik */
+    --hero-hud-teks: #ffffff;             /* Warna teks penanda posisi "01 / 04" */
+    --hero-titik-nonaktif: #9ca3af;       /* Warna titik foto yang tidak aktif */
+    --hero-titik-aktif: #2f80ed;          /* Warna titik foto yang sedang aktif */
+    --hero-gradasi-bawah: #111418;        /* Warna dasar gradasi bawah pada bingkai foto hero */
+    --hero-bayangan-lembut: #111418;      /* Warna dasar bayangan lembut kartu & bingkai */
+    --hero-bingkai-tinggi: 380px;         /* Tinggi tetap bingkai foto hero agar tata letak tidak bergeser */
+    --hero-bingkai-radius: 24px;          /* Radius sudut bingkai foto hero */
+    --hero-panah-ukuran: 44px;            /* Ukuran lebar & tinggi tombol panah slider foto (minimal 44px) */
+    --hero-detail-ukuran: 52px;           /* Ukuran tombol lingkaran panah detail kamar */
+    --hero-kartu-media-tinggi: 200px;     /* Tinggi area foto pada kartu kamar lainnya */
 }
 
 body {
@@ -55,7 +75,7 @@ h1, h2, h3, h4, h5, h6 {
     transition: background-color 0.2s ease;
 }
 .btn-pil-hitam:hover {
-    background-color: #374151;
+    background-color: var(--warna-teks-sekunder);
     color: var(--warna-bg);
 }
 
@@ -80,9 +100,170 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Blok & Kartu */
 .blok-hero {
-    background-color: #27425d9c;
+    background-color: var(--hero-blok-bg);
     border-radius: 32px;
     overflow: hidden;
+}
+
+/* DITAMBAHKAN TAHAP 7: Gaya teks & tombol pada blok hero kamar unggulan */
+.hero-judul-kamar {
+    color: var(--hero-judul-warna);
+    text-shadow: 0 2px 4px color-mix(in srgb, var(--hero-bayangan-lembut) 35%, transparent);
+}
+
+.hero-deskripsi-kamar {
+    color: var(--hero-deskripsi-warna);
+    text-shadow: 0 1px 2px color-mix(in srgb, var(--hero-bayangan-lembut) 55%, transparent);
+}
+
+.hero-harga-kamar {
+    color: var(--hero-harga-warna);
+}
+
+.hero-tombol-detail {
+    width: var(--hero-detail-ukuran);
+    height: var(--hero-detail-ukuran);
+}
+
+/* DITAMBAHKAN TAHAP 7: Bingkai dan transisi crossfade slider foto kamar unggulan */
+.hero-slider-bingkai {
+    height: var(--hero-bingkai-tinggi);
+    border-radius: var(--hero-bingkai-radius);
+    overflow: hidden;
+    touch-action: pan-y;
+    outline: none;
+}
+
+.hero-slider-bingkai:focus-visible {
+    box-shadow: 0 0 0 3px var(--hero-titik-aktif);
+}
+
+.hero-foto-slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--hero-durasi-pudars, 0.4s) ease;
+    pointer-events: none;
+    user-select: none;
+}
+
+.hero-foto-slide.aktif {
+    opacity: 1;
+}
+
+.hero-foto-gradasi {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+        180deg,
+        transparent 50%,
+        color-mix(in srgb, var(--hero-gradasi-bawah) 45%, transparent) 100%
+    );
+}
+
+/* DITAMBAHKAN TAHAP 7: Tombol panah kiri/kanan dan penanda posisi foto hero */
+.hero-foto-panah {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: var(--hero-panah-ukuran);
+    height: var(--hero-panah-ukuran);
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--hero-panah-border);
+    background-color: color-mix(in srgb, var(--hero-panah-bg) 90%, transparent);
+    color: var(--hero-panah-warna);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--hero-bayangan-lembut) 20%, transparent);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.hero-foto-panah-kiri {
+    left: 12px;
+}
+
+.hero-foto-panah-kanan {
+    right: 12px;
+}
+
+.hero-foto-hud {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    bottom: 12px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.hero-foto-penanda {
+    background-color: color-mix(in srgb, var(--hero-hud-bg) 72%, transparent);
+    color: var(--hero-hud-teks);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.hero-foto-titik {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: auto;
+}
+
+.hero-foto-titik-btn {
+    width: 10px;
+    height: 10px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: color-mix(in srgb, var(--hero-titik-nonaktif) 80%, transparent);
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.hero-foto-titik-btn.aktif {
+    background-color: var(--hero-titik-aktif);
+    transform: scale(1.2);
+}
+
+.hero-tombol-geser {
+    width: var(--hero-panah-ukuran);
+    height: var(--hero-panah-ukuran);
+}
+
+.kartu-kamar-media {
+    height: var(--hero-kartu-media-tinggi);
+    background-color: var(--warna-garis);
+}
+
+.cta-media-bingkai {
+    height: 300px;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.langkah-utama-card {
+    background-color: var(--warna-primer);
+}
+
+.kartu-aturan-kos {
+    background-color: var(--warna-primer);
 }
 
 .kartu-kamar {
@@ -94,7 +275,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .kartu-kamar:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(194, 22, 22, 0.06);
+    box-shadow: 0 12px 24px color-mix(in srgb, var(--hero-bayangan-lembut) 10%, transparent);
 }
 
 /* Slider Horizontal Scroll Snap */
