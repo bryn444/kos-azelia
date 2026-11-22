@@ -11,6 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // DITAMBAHKAN: percayai proxy (ngrok) supaya Laravel tahu pengunjung memakai HTTPS,
+        // sehingga asset() dan route() menghasilkan alamat https://.
+        // Untuk demo ngrok cukup '*'. Saat hosting sungguhan, ganti dengan IP proxy server.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'isPengelola' => \App\Http\Middleware\IsPengelola::class,
             'isPemilik' => \App\Http\Middleware\IsPemilik::class,

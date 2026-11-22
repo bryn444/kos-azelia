@@ -9,7 +9,7 @@
    PETA WARNA & VARIABEL GLOBAL (:root)
    ========================================== */
 :root {
-    --warna-bg: #FFFFFF;              /* Digunakan untuk latar belakang utama body */
+    --warna-bg: #ffffff;              /* Digunakan untuk latar belakang utama body */
     --warna-teks-utama: #111418;      /* Digunakan untuk judul dan teks utama */
     --warna-teks-sekunder: #6B7280;   /* Digunakan untuk deskripsi dan teks redup */
     --warna-primer: #2F80ED;          /* Digunakan untuk tombol utama, badge, dan aksen */
@@ -80,7 +80,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Blok & Kartu */
 .blok-hero {
-    background-color: var(--warna-abu-muda);
+    background-color: #27425d9c;
     border-radius: 32px;
     overflow: hidden;
 }
@@ -94,7 +94,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .kartu-kamar:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+    box-shadow: 0 12px 24px rgba(194, 22, 22, 0.06);
 }
 
 /* Slider Horizontal Scroll Snap */

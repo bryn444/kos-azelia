@@ -52,8 +52,9 @@
                 <div class="hero-slide row align-items-center g-4 {{ $index > 0 ? 'd-none' : '' }}" data-slide-index="{{ $index }}">
                     <div class="col-lg-6 z-1 py-md-4">
                         <span class="badge bg-white text-dark px-3 py-2 rounded-pill mb-3 fw-bold shadow-sm">KAMAR UNGGULAN</span>
-                        <h1 class="display-5 fw-bold text-white mb-3" style="text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Kamar {{ $ku->nomor_kamar }}</h1>
-                        <p class="text-white-50 fs-5 mb-4" style="text-shadow: 0 1px 2px rgba(0,0,0,0.3);">{{ $ku->deskripsi ?? 'Kamar putri eksklusif dengan fasilitas lengkap, bersih, dan nyaman.' }}</p>
+                   <!-- <h1 class="display-5 fw-bold text-white mb-3" style="text-shadow: 0 2px 4px rgba(9, 9, 9, 0.3);">Kamar {{ $ku->nomor_kamar }}</h1> -->
+                        <h1 class="display-5 fw-bold mb-3" style="color: #6c9fe1;" >Kamar {{ $ku->nomor_kamar }}</h1>
+                        <p class="text-white-50 fs-5 mb-4" style="text-shadow: 0 1px 2px rgb(0, 0, 0);">{{ $ku->deskripsi ?? 'Kamar putri eksklusif dengan fasilitas lengkap, bersih, dan nyaman.' }}</p>
                         <div class="fs-4 fw-bold text-white mb-4">Rp{{ number_format($ku->tarif, 0, ',', '.') }} / bulan</div>
                         <div class="d-flex flex-wrap gap-3">
                             <a href="https://wa.me/{{ config('kos.whatsapp') }}?text={{ urlencode('Halo, saya ingin menanyakan ketersediaan Kamar ' . $ku->nomor_kamar . '.') }}" target="_blank" class="btn-pil-biru">Tanya Ketersediaan Kamar</a>
