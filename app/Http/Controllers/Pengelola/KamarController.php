@@ -1,9 +1,9 @@
 <?php
 /**
- * NAMA FILE: KamarController.php (DIPERBARUI TAHAP 5A)
- * FUNGSI: Mengelola logika CRUD kamar beserta manajemen foto multiple dan batasan kamar unggulan.
+ * NAMA FILE: KamarController.php (DIPERBARUI TAHAP 5A & TAHAP 8)
+ * FUNGSI: Mengelola logika CRUD kamar beserta manajemen foto multiple, batasan kamar unggulan, dan penghapusan kamar aman.
  * HALAMAN: Panel Pengelola - Modul Kamar.
- * CARA MENGUBAH: Sesuaikan aturan validasi di method store/update atau logika transaksi database.
+ * CARA MENGUBAH: Sesuaikan aturan validasi di method store/update atau aturan penghapusan di konfirmasiHapus/destroy.
  */
 
 namespace App\Http\Controllers\Pengelola;
@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Storage;
 class KamarController extends Controller
 {
     /**
-     * Menampilkan daftar grid 15 kamar
+     * Menampilkan daftar grid 15 kamar.
+     * Alasan: Pengelola dapat melihat seluruh kamar beserta status dan foto sampulnya.
      */
     public function index()
     {
@@ -28,7 +29,8 @@ class KamarController extends Controller
     }
 
     /**
-     * Menampilkan form tambah kamar baru
+     * Menampilkan form tambah kamar baru.
+     * Alasan: Menyediakan halaman input data kamar dan foto baru.
      */
     public function create()
     {
@@ -36,7 +38,8 @@ class KamarController extends Controller
     }
 
     /**
-     * Menyimpan data kamar baru beserta unggahan foto dan validasi aturan unggulan
+     * Menyimpan data kamar baru beserta unggahan foto dan validasi aturan unggulan.
+     * Alasan: Memastikan data kamar dan batas foto/unggulan valid sebelum masuk ke database.
      */
     public function store(Request $request)
     {
@@ -102,7 +105,8 @@ class KamarController extends Controller
     }
 
     /**
-     * Menampilkan form ubah kamar beserta galeri foto
+     * Menampilkan form ubah kamar beserta galeri foto.
+     * Alasan: Pengelola dapat memperbarui detail kamar, status unggulan, dan foto kamar.
      */
     public function edit(Kamar $kamar)
     {
@@ -111,7 +115,8 @@ class KamarController extends Controller
     }
 
     /**
-     * Memperbarui data kamar dan mengelola foto
+     * Memperbarui data kamar dan mengelola foto.
+     * Alasan: Menyimpan perubahan atribut kamar dan menambah foto baru sesuai batas aturan.
      */
     public function update(Request $request, Kamar $kamar)
     {
@@ -182,7 +187,8 @@ class KamarController extends Controller
     }
 
     /**
-     * Menghapus foto spesifik dari suatu kamar
+     * Menghapus foto spesifik dari suatu kamar.
+     * Alasan: Membersihkan file fisik dan baris foto kamar yang tidak lagi diperlukan.
      */
     public function hapusFoto(Kamar $kamar, KamarFoto $foto)
     {
@@ -218,7 +224,8 @@ class KamarController extends Controller
     }
 
     /**
-     * Menetapkan foto tertentu sebagai sampul utama kamar
+     * Menetapkan foto tertentu sebagai sampul utama kamar.
+     * Alasan: Menentukan gambar utama kamar yang tampil di daftar maupun halaman publik.
      */
     public function jadikanSampul(Kamar $kamar, KamarFoto $foto)
     {
@@ -234,5 +241,74 @@ class KamarController extends Controller
         });
 
         return back()->with('sukses', 'Foto sampul kamar berhasil diperbarui.');
+    }
+
+    /**
+     * DITAMBAHKAN TAHAP 8: Menampilkan halaman konfirmasi hapus kamar setelah memeriksa syarat kelayakan hapus.
+     * Alasan: Mencegah penghapusan kamar yang sedang terisi atau pernah dihuni (agar riwayat pembayaran tetap aman).
+     */
+    public function konfirmasiHapus(Kamar $kamar)
+    {
+        $alasanTolak = $this->alasanTidakBisaDihapus($kamar);
+        if ($alasanTolak !== null) {
+            return redirect()->route('pengelola.kamar.edit', $kamar->id)->with('error', $alasanTolak);
+        }
+
+        $kamar->loadCount('fotos');
+        return view('pengelola.kamar.konfirmasi_hapus', compact('kamar'));
+    }
+
+    /**
+     * DITAMBAHKAN TAHAP 8: Menghapus data kamar dalam transaksi DB lalu menghapus file fotonya dari disk public.
+     * Alasan: Menjaga konsistensi database dan membersihkan file fisik hanya setelah transaksi sukses.
+     */
+    public function destroy(Kamar $kamar)
+    {
+        $alasanTolak = $this->alasanTidakBisaDihapus($kamar);
+        if ($alasanTolak !== null) {
+            return redirect()->route('pengelola.kamar.edit', $kamar->id)->with('error', $alasanTolak);
+        }
+
+        $nomorKamar = $kamar->nomor_kamar;
+        $sedangUnggulan = (bool) $kamar->unggulan;
+
+        // Kumpulkan path semua foto sebelum baris kamar (dan cascade kamar_foto) dihapus
+        $pathFotoList = $kamar->fotos()->pluck('path')->filter()->values()->all();
+
+        DB::transaction(function () use ($kamar) {
+            $kamar->delete();
+        });
+
+        // Hapus file fisik foto dari disk public setelah transaksi database berhasil
+        foreach ($pathFotoList as $pathFoto) {
+            if (Storage::disk('public')->exists($pathFoto)) {
+                Storage::disk('public')->delete($pathFoto);
+            }
+        }
+
+        $pesanSukses = "Kamar {$nomorKamar} berhasil dihapus.";
+        if ($sedangUnggulan) {
+            $pesanSukses .= ' (Catatan: kamar ini sebelumnya berstatus unggulan.)';
+        }
+
+        return redirect()->route('pengelola.kamar')->with('sukses', $pesanSukses);
+    }
+
+    /**
+     * DITAMBAHKAN TAHAP 8: Memeriksa apakah kamar boleh dihapus berdasarkan status dan riwayat penghuni.
+     * Alasan: Aturan bisnis di server bahwa kamar terisi atau pernah/sedang dihuni tidak boleh dihapus.
+     */
+    private function alasanTidakBisaDihapus(Kamar $kamar): ?string
+    {
+        $adaPenghuni = $kamar->penghuni()->exists();
+        if ($adaPenghuni) {
+            return "Kamar {$kamar->nomor_kamar} tidak bisa dihapus karena pernah atau sedang dihuni (riwayat pembayaran harus tetap tersimpan).";
+        }
+
+        if ($kamar->status === 'terisi') {
+            return "Kamar {$kamar->nomor_kamar} tidak bisa dihapus karena statusnya sedang terisi.";
+        }
+
+        return null;
     }
 }

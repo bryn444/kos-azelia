@@ -51,6 +51,10 @@ Route::middleware(['auth', 'isPengelola'])->prefix('pengelola')->name('pengelola
     Route::delete('/latar-beranda/{foto}/hapus', [LatarBerandaController::class, 'hapus'])->name('latar.hapus');
     Route::post('/latar-beranda/reset', [LatarBerandaController::class, 'reset'])->name('latar.reset');
 
+    // DITAMBAHKAN TAHAP 8: Rute konfirmasi dan eksekusi hapus kamar
+    Route::get('/kamar/{kamar}/hapus', [KamarController::class, 'konfirmasiHapus'])->name('kamar.hapus');
+    Route::post('/kamar/{kamar}/hapus', [KamarController::class, 'destroy'])->name('kamar.destroy');
+    
     // Halaman pratinjau publik khusus di dalam iframe editor pengelola
     Route::get('/latar-beranda/pratinjau', [LatarBerandaController::class, 'pratinjau'])->name('latar.pratinjau');
 

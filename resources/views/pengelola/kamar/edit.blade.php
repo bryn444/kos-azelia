@@ -1,14 +1,25 @@
 @extends('layouts.panel.main')
 
 {{-- 
-  NAMA FILE: edit.blade.php (Modul Kamar - DITAMBAHKAN TAHAP 5A)
-  FUNGSI: Form mengubah data kamar, mengelola galeri foto eksisting, menetapkan sampul, dan menghapus foto.
-  CARA MENGUBAH: Ubah tata letak grid galeri foto atau atribut form di bawah ini.
+  NAMA FILE: edit.blade.php (Modul Kamar - DITAMBAHKAN TAHAP 5A & TAHAP 8)
+  FUNGSI: Form mengubah data kamar, mengelola galeri foto eksisting, menetapkan sampul, menghapus foto, dan zona berbahaya hapus kamar.
+  CARA MENGUBAH: Ubah tata letak grid galeri foto, atribut form, atau blok Zona Berbahaya di bawah ini.
 --}}
 
 @section('title', 'Ubah Kamar - Kos Azelia')
 
 @section('content')
+@php
+    // DITAMBAHKAN TAHAP 8: Cek apakah kamar pernah/sedang dihuni atau berstatus terisi untuk status tombol hapus
+    $punyaPenghuni = $kamar->penghuni()->exists();
+    $tidakBisaDihapus = $punyaPenghuni || $kamar->status === 'terisi';
+    $alasanNonaktif = $punyaPenghuni
+        ? "Kamar {$kamar->nomor_kamar} tidak bisa dihapus karena pernah atau sedang dihuni (riwayat pembayaran harus tetap tersimpan)."
+        : ($kamar->status === 'terisi'
+            ? "Kamar {$kamar->nomor_kamar} tidak bisa dihapus karena statusnya sedang terisi."
+            : null);
+@endphp
+
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
@@ -102,6 +113,29 @@
                 <form id="formHapusFoto{{ $foto->id }}" action="{{ route('pengelola.kamar.foto.hapus', [$kamar->id, $foto->id]) }}" method="POST" class="d-none">@csrf</form>
                 <form id="formSampul{{ $foto->id }}" action="{{ route('pengelola.kamar.foto.sampul', [$kamar->id, $foto->id]) }}" method="POST" class="d-none">@csrf</form>
             @endforeach
+
+            {{-- ===== BAGIAN: ZONA BERBAHAYA HAPUS KAMAR (TAHAP 8) ===== --}}
+            {{-- DITAMBAHKAN TAHAP 8: Blok terpisah di bawah form ubah untuk masuk ke konfirmasi hapus kamar --}}
+            <hr class="my-5">
+            <div class="border border-danger rounded-4 p-4 bg-light">
+                <h3 class="h4 fw-bold text-danger mb-2">Zona Berbahaya</h3>
+                <p class="text-muted fs-5 mb-4">
+                    Menghapus kamar akan menghapus data kamar beserta seluruh fotonya secara permanen.
+                </p>
+
+                @if($tidakBisaDihapus)
+                    <button type="button" class="btn btn-outline-danger btn-lg rounded-pill px-4 py-3 fw-bold fs-5 disabled" aria-disabled="true" disabled>
+                        Hapus Kamar Ini
+                    </button>
+                    <div class="text-danger fw-semibold fs-6 mt-3">
+                        {{ $alasanNonaktif }}
+                    </div>
+                @else
+                    <a href="{{ route('pengelola.kamar.hapus', $kamar->id) }}" class="btn btn-outline-danger btn-lg rounded-pill px-4 py-3 fw-bold fs-5 d-inline-flex align-items-center justify-content-center">
+                        Hapus Kamar Ini
+                    </a>
+                @endif
+            </div>
         </div>
     </div>
 </div>

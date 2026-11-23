@@ -1,7 +1,7 @@
 <?php
 /**
- * NAMA FILE: Kamar.php (DITAMBAHKAN TAHAP 5A)
- * FUNGSI: Model Eloquent tabel 'kamar' dengan tambahan relasi foto, scope unggulan, dan accessor sampul.
+ * NAMA FILE: Kamar.php (DITAMBAHKAN TAHAP 5A & TAHAP 8)
+ * FUNGSI: Model Eloquent tabel 'kamar' dengan tambahan relasi foto, relasi penghuni, scope unggulan, dan accessor sampul.
  * HALAMAN: Seluruh modul Kamar.
  * CARA MENGUBAH: Tambahkan method relasi atau accessor di bawah kelas ini.
  */
@@ -31,11 +31,21 @@ class Kamar extends Model
     ];
 
     /**
-     * Relasi ke penghuni aktif
+     * Relasi ke penghuni aktif.
+     * Alasan: Memudahkan pengecekan penghuni yang sedang menempati kamar saat ini.
      */
     public function penghuniAktif(): HasOne
     {
         return $this->hasOne(Penghuni::class, 'kamar_id')->where('status', 'aktif');
+    }
+
+    /**
+     * DITAMBAHKAN TAHAP 8: Relasi ke seluruh penghuni (aktif maupun keluar) yang pernah memakai kamar ini.
+     * Alasan: Kamar tidak boleh dihapus jika pernah dihuni agar riwayat pembayaran penghuni tetap tersimpan.
+     */
+    public function penghuni(): HasMany
+    {
+        return $this->hasMany(Penghuni::class, 'kamar_id');
     }
 
     // DITAMBAHKAN TAHAP 5A: Relasi ke seluruh foto kamar diurutkan dari urutan terkecil

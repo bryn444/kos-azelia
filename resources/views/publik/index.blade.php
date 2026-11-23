@@ -151,7 +151,7 @@
         </div>
     </section>
 
-    {{-- ===== BAGIAN: 4. KAMAR LAINNYA (SLIDER HORIZONTAL) ===== --}}
+    <!-- {{-- ===== BAGIAN: 4. KAMAR LAINNYA (SLIDER HORIZONTAL) ===== --}}
     <section class="mb-5 py-4" id="kamar">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
@@ -187,7 +187,7 @@
                 </div>
             @endforeach
         </div>
-    </section>
+    </section> -->
 
     {{-- ===== BAGIAN: 5. CARA MENGEKOS JADI MUDAH ===== --}}
     <section class="my-5 py-5 bg-light rounded-4 p-4 p-md-5" id="cara">
