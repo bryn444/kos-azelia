@@ -1,9 +1,9 @@
 <?php
 /**
- * NAMA FILE: KamarController.php (DIPERBARUI TAHAP 5A & TAHAP 8)
- * FUNGSI: Mengelola logika CRUD kamar beserta manajemen foto multiple, batasan kamar unggulan, dan penghapusan kamar aman.
+ * NAMA FILE: KamarController.php (DIPERBARUI TAHAP 5A, TAHAP 8, TAHAP 9A & TAHAP 9B)
+ * FUNGSI: Mengelola CRUD kamar, foto, sinkronisasi status, validasi tarif, hapus kamar, dan log aktivitas.
  * HALAMAN: Panel Pengelola - Modul Kamar.
- * CARA MENGUBAH: Sesuaikan aturan validasi di method store/update atau aturan penghapusan di konfirmasiHapus/destroy.
+ * CARA MENGUBAH: Sesuaikan batas aturan pada config/kos.php bagian 'aturan'.
  */
 
 namespace App\Http\Controllers\Pengelola;
@@ -11,6 +11,7 @@ namespace App\Http\Controllers\Pengelola;
 use App\Http\Controllers\Controller;
 use App\Models\Kamar;
 use App\Models\KamarFoto;
+use App\Services\LogAktivitasService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -18,36 +19,44 @@ use Illuminate\Support\Facades\Storage;
 class KamarController extends Controller
 {
     /**
-     * Menampilkan daftar grid 15 kamar.
-     * Alasan: Pengelola dapat melihat seluruh kamar beserta status dan foto sampulnya.
+     * Menampilkan daftar 15 kamar beserta informasi ketidaksesuaian status bila ada.
+     * Alasan: Pengelola dapat melihat status kamar dan segera memperbaiki bila tidak sesuai penghuni aktif.
      */
     public function index()
     {
-        // DITAMBAHKAN TAHAP 5A: Eager load relasi fotos dan sampul untuk efisiensi thumbnail
         $kamars = Kamar::with(['penghuniAktif', 'fotos', 'sampul'])->orderBy('nomor_kamar')->get();
-        return view('pengelola.kamar.index', compact('kamars'));
+
+        $jumlahTidakSesuai = $kamars->filter(function (Kamar $k) {
+            return $k->status !== $k->statusSeharusnya();
+        })->count();
+
+        return view('pengelola.kamar.index', compact('kamars', 'jumlahTidakSesuai'));
     }
 
     /**
      * Menampilkan form tambah kamar baru.
-     * Alasan: Menyediakan halaman input data kamar dan foto baru.
+     * Alasan: Menyediakan halaman tambah kamar dengan batas tarif dari konfigurasi.
      */
     public function create()
     {
-        return view('pengelola.kamar.create');
+        $tarifMin = (int) config('kos.aturan.tarif_min', 100000);
+        $tarifMaks = (int) config('kos.aturan.tarif_maks', 5000000);
+
+        return view('pengelola.kamar.create', compact('tarifMin', 'tarifMaks'));
     }
 
     /**
-     * Menyimpan data kamar baru beserta unggahan foto dan validasi aturan unggulan.
-     * Alasan: Memastikan data kamar dan batas foto/unggulan valid sebelum masuk ke database.
+     * Menyimpan data kamar baru; status awal selalu 'kosong' dan tarif divalidasi sesuai rentang.
+     * Alasan: Mencegah input tarif tidak wajar dan mencegah pengubahan status kamar secara manual.
      */
     public function store(Request $request)
     {
-        // DITAMBAHKAN TAHAP 5A: Validasi input teks dan file foto multiple (maksimal 6 file)
+        $tarifMin = (int) config('kos.aturan.tarif_min', 100000);
+        $tarifMaks = (int) config('kos.aturan.tarif_maks', 5000000);
+
         $validated = $request->validate([
             'nomor_kamar' => 'required|string|unique:kamar,nomor_kamar|max:10',
-            'tarif' => 'required|integer|min:0',
-            'status' => 'required|in:kosong,terisi',
+            'tarif' => "required|integer|min:{$tarifMin}|max:{$tarifMaks}",
             'deskripsi' => 'nullable|string|max:300',
             'unggulan' => 'nullable|boolean',
             'fotos.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
@@ -55,6 +64,9 @@ class KamarController extends Controller
             'nomor_kamar.required' => 'Nomor kamar wajib diisi.',
             'nomor_kamar.unique' => 'Nomor kamar sudah terdaftar.',
             'tarif.required' => 'Tarif sewa wajib diisi.',
+            'tarif.integer' => 'Tarif sewa harus berupa bilangan bulat.',
+            'tarif.min' => 'Tarif sewa minimal Rp' . number_format($tarifMin, 0, ',', '.') . '.',
+            'tarif.max' => 'Tarif sewa maksimal Rp' . number_format($tarifMaks, 0, ',', '.') . '.',
             'deskripsi.max' => 'Deskripsi maksimal 300 karakter.',
             'fotos.*.image' => 'File yang diunggah harus berupa gambar.',
             'fotos.*.max' => 'Setiap foto maksimal berukuran 2 MB.',
@@ -63,17 +75,14 @@ class KamarController extends Controller
         $isUnggulan = $request->has('unggulan') && $request->input('unggulan') == '1';
         $uploadedFiles = $request->file('fotos', []);
 
-        // DITAMBAHKAN TAHAP 5A: Cek batas maksimal 6 foto
         if (count($uploadedFiles) > 6) {
             return back()->withInput()->with('error', 'Maksimal Anda hanya dapat mengunggah 6 foto dalam satu waktu.');
         }
 
-        // DITAMBAHKAN TAHAP 5A: Aturan bisnis - Kamar unggulan wajib punya minimal 1 foto
         if ($isUnggulan && count($uploadedFiles) === 0) {
             return back()->withInput()->with('error', 'Kamar unggulan harus memiliki minimal 1 foto.');
         }
 
-        // DITAMBAHKAN TAHAP 5A: Aturan bisnis - Maksimal 5 kamar unggulan aktif sekaligus
         if ($isUnggulan) {
             $totalUnggulan = Kamar::where('unggulan', true)->count();
             if ($totalUnggulan >= 5) {
@@ -81,57 +90,100 @@ class KamarController extends Controller
             }
         }
 
-        DB::transaction(function () use ($validated, $isUnggulan, $uploadedFiles) {
+        $kamarBaru = null;
+
+        DB::transaction(function () use ($validated, $isUnggulan, $uploadedFiles, &$kamarBaru) {
             $kamar = Kamar::create([
                 'nomor_kamar' => $validated['nomor_kamar'],
-                'tarif' => $validated['tarif'],
-                'status' => $validated['status'],
+                'tarif' => (int) $validated['tarif'],
+                'status' => 'kosong',
                 'deskripsi' => $validated['deskripsi'] ?? null,
                 'unggulan' => $isUnggulan,
             ]);
 
-            // Proses penyimpanan file foto
             foreach ($uploadedFiles as $index => $file) {
                 $path = $file->store('kamar', 'public');
                 $kamar->fotos()->create([
                     'path' => $path,
                     'urutan' => $index,
-                    'is_sampul' => ($index === 0), // Foto pertama otomatis jadi sampul
+                    'is_sampul' => ($index === 0),
                 ]);
             }
+
+            $kamarBaru = $kamar;
         });
+
+        // DITAMBAHKAN TAHAP 9B: Catat penambahan kamar baru
+        if ($kamarBaru) {
+            $pelaku = auth()->user()->nama_lengkap ?? 'Pengelola';
+            LogAktivitasService::catat(
+                'kamar_tambah',
+                "{$pelaku} menambah kamar {$kamarBaru->nomor_kamar} dengan tarif Rp" . number_format($kamarBaru->tarif, 0, ',', '.'),
+                $kamarBaru,
+                null,
+                $kamarBaru->toArray()
+            );
+        }
 
         return redirect()->route('pengelola.kamar')->with('sukses', 'Data kamar baru berhasil ditambahkan.');
     }
 
     /**
-     * Menampilkan form ubah kamar beserta galeri foto.
-     * Alasan: Pengelola dapat memperbarui detail kamar, status unggulan, dan foto kamar.
+     * Menampilkan form ubah kamar beserta galeri foto dan batas tarif.
+     * Alasan: Pengelola dapat mengubah detail kamar dan foto dengan panduan batas tarif.
      */
     public function edit(Kamar $kamar)
     {
-        $kamar->load('fotos');
-        return view('pengelola.kamar.edit', compact('kamar'));
+        $kamar->load(['fotos', 'penghuniAktif']);
+        $tarifMin = (int) config('kos.aturan.tarif_min', 100000);
+        $tarifMaks = (int) config('kos.aturan.tarif_maks', 5000000);
+        $tarifUbahPersen = (float) config('kos.aturan.tarif_ubah_persen', 30);
+
+        return view('pengelola.kamar.edit', compact('kamar', 'tarifMin', 'tarifMaks', 'tarifUbahPersen'));
     }
 
     /**
-     * Memperbarui data kamar dan mengelola foto.
-     * Alasan: Menyimpan perubahan atribut kamar dan menambah foto baru sesuai batas aturan.
+     * Memperbarui data kamar (tanpa mengubah status manual) dan memvalidasi lonjakan tarif.
+     * Alasan: Mencegah salah ketik tarif besar dan menjaga konsistensi status kamar.
      */
     public function update(Request $request, Kamar $kamar)
     {
+        $tarifMin = (int) config('kos.aturan.tarif_min', 100000);
+        $tarifMaks = (int) config('kos.aturan.tarif_maks', 5000000);
+        $tarifUbahPersen = (float) config('kos.aturan.tarif_ubah_persen', 30);
+
         $validated = $request->validate([
             'nomor_kamar' => 'required|string|max:10|unique:kamar,nomor_kamar,' . $kamar->id,
-            'tarif' => 'required|integer|min:0',
-            'status' => 'required|in:kosong,terisi',
+            'tarif' => "required|integer|min:{$tarifMin}|max:{$tarifMaks}",
             'deskripsi' => 'nullable|string|max:300',
             'unggulan' => 'nullable|boolean',
+            'yakin_tarif_berubah' => 'nullable|accepted',
             'fotos.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ], [
             'nomor_kamar.required' => 'Nomor kamar wajib diisi.',
+            'tarif.required' => 'Tarif sewa wajib diisi.',
+            'tarif.integer' => 'Tarif sewa harus berupa bilangan bulat.',
+            'tarif.min' => 'Tarif sewa minimal Rp' . number_format($tarifMin, 0, ',', '.') . '.',
+            'tarif.max' => 'Tarif sewa maksimal Rp' . number_format($tarifMaks, 0, ',', '.') . '.',
             'deskripsi.max' => 'Deskripsi maksimal 300 karakter.',
             'fotos.*.max' => 'Setiap foto maksimal berukuran 2 MB.',
         ]);
+
+        $tarifLama = (int) $kamar->tarif;
+        $tarifBaru = (int) $validated['tarif'];
+        if ($tarifLama > 0 && $tarifBaru !== $tarifLama) {
+            $persenPerubahan = (abs($tarifBaru - $tarifLama) / $tarifLama) * 100;
+            if ($persenPerubahan > $tarifUbahPersen && !$request->boolean('yakin_tarif_berubah')) {
+                $pesanTarif = 'Tarif berubah dari Rp' . number_format($tarifLama, 0, ',', '.')
+                    . ' menjadi Rp' . number_format($tarifBaru, 0, ',', '.')
+                    . '. Periksa kembali.';
+
+                return back()
+                    ->withInput()
+                    ->with('perlu_konfirmasi_tarif', $pesanTarif)
+                    ->withErrors(['yakin_tarif_berubah' => $pesanTarif]);
+            }
+        }
 
         $isUnggulan = $request->has('unggulan') && $request->input('unggulan') == '1';
         $newFiles = $request->file('fotos', []);
@@ -143,7 +195,6 @@ class KamarController extends Controller
             return back()->withInput()->with('error', 'Total foto kamar tidak boleh melebihi 6 buah.');
         }
 
-        // Cek syarat kamar unggulan (harus punya minimal 1 foto total)
         if ($isUnggulan && $totalSetelahTambah === 0) {
             return back()->withInput()->with('error', 'Kamar unggulan harus memiliki minimal 1 foto.');
         }
@@ -155,16 +206,17 @@ class KamarController extends Controller
             }
         }
 
-        DB::transaction(function () use ($kamar, $validated, $isUnggulan, $newFiles) {
+        $dataLama = $kamar->toArray();
+        $jumlahFotoDitambah = count($newFiles);
+
+        DB::transaction(function () use ($kamar, $validated, $tarifBaru, $isUnggulan, $newFiles) {
             $kamar->update([
                 'nomor_kamar' => $validated['nomor_kamar'],
-                'tarif' => $validated['tarif'],
-                'status' => $validated['status'],
+                'tarif' => $tarifBaru,
                 'deskripsi' => $validated['deskripsi'] ?? null,
                 'unggulan' => $isUnggulan,
             ]);
 
-            // Tambahkan foto baru jika ada
             $lastUrutan = $kamar->fotos()->max('urutan') ?? -1;
             $adaSampul = $kamar->fotos()->where('is_sampul', true)->exists();
 
@@ -183,7 +235,90 @@ class KamarController extends Controller
             }
         });
 
+        $kamar->refresh();
+        $pelaku = auth()->user()->nama_lengkap ?? 'Pengelola';
+
+        // DITAMBAHKAN TAHAP 9B: Catat penambahan foto kamar jika ada foto baru diunggah
+        if ($jumlahFotoDitambah > 0) {
+            LogAktivitasService::catat(
+                'kamar_foto_tambah',
+                "{$pelaku} menambah {$jumlahFotoDitambah} foto untuk kamar {$kamar->nomor_kamar}",
+                $kamar,
+                ['jumlah_foto' => $jumlahFotoAktif],
+                ['jumlah_foto' => $jumlahFotoAktif + $jumlahFotoDitambah]
+            );
+        }
+
+        // DITAMBAHKAN TAHAP 9B: Catat perubahan data kamar
+        LogAktivitasService::catat(
+            'kamar_ubah',
+            "{$pelaku} mengubah data kamar {$kamar->nomor_kamar}",
+            $kamar,
+            $dataLama,
+            $kamar->toArray()
+        );
+
         return redirect()->route('pengelola.kamar')->with('sukses', 'Data kamar berhasil diperbarui.');
+    }
+
+    /**
+     * Menampilkan halaman konfirmasi sinkronisasi status kamar.
+     * Alasan: Pengelola dapat memeriksa daftar kamar yang statusnya berbeda dengan penghuni aktif sebelum diperbaiki.
+     */
+    public function konfirmasiSinkron()
+    {
+        $kamarBermasalah = Kamar::with('penghuniAktif')
+            ->orderBy('nomor_kamar')
+            ->get()
+            ->filter(function (Kamar $k) {
+                return $k->status !== $k->statusSeharusnya();
+            })
+            ->values();
+
+        return view('pengelola.kamar.sinkron_status', compact('kamarBermasalah'));
+    }
+
+    /**
+     * Memperbaiki status kamar yang tidak sesuai dengan penghuni aktif.
+     * Alasan: Menyamakan status kamar di database dengan kondisi penghuni aktif secara atomik.
+     */
+    public function prosesSinkron()
+    {
+        $diperbaiki = 0;
+        $detailPerubahan = [];
+
+        DB::transaction(function () use (&$diperbaiki, &$detailPerubahan) {
+            $kamars = Kamar::with('penghuniAktif')->lockForUpdate()->get();
+            foreach ($kamars as $kamar) {
+                $statusLama = $kamar->status;
+                if ($kamar->sinkronStatus()) {
+                    $diperbaiki++;
+                    $detailPerubahan[] = [
+                        'kamar' => $kamar->nomor_kamar,
+                        'dari' => $statusLama,
+                        'menjadi' => $kamar->status,
+                    ];
+                }
+            }
+        });
+
+        if ($diperbaiki > 0) {
+            $pelaku = auth()->user()->nama_lengkap ?? 'Pengelola';
+            // DITAMBAHKAN TAHAP 9B: Catat sinkronisasi status kamar
+            LogAktivitasService::catat(
+                'kamar_sinkron_status',
+                "{$pelaku} menyinkronkan status {$diperbaiki} kamar dengan penghuni aktif",
+                null,
+                null,
+                ['diperbaiki' => $diperbaiki, 'rincian' => $detailPerubahan]
+            );
+        }
+
+        $pesan = $diperbaiki > 0
+            ? "Status {$diperbaiki} kamar berhasil disinkronkan dengan penghuni aktif."
+            : 'Tidak ada status kamar yang perlu diperbaiki.';
+
+        return redirect()->route('pengelola.kamar')->with('sukses', $pesan);
     }
 
     /**
@@ -196,8 +331,9 @@ class KamarController extends Controller
             abort(403, 'Aksi tidak sah.');
         }
 
+        $dataFotoLama = $foto->toArray();
+
         DB::transaction(function () use ($kamar, $foto) {
-            // Hapus file fisik dari storage
             if (Storage::disk('public')->exists($foto->path)) {
                 Storage::disk('public')->delete($foto->path);
             }
@@ -205,7 +341,6 @@ class KamarController extends Controller
             $wasSampul = $foto->is_sampul;
             $foto->delete();
 
-            // Jika yang dihapus adalah foto sampul, jadikan foto berikutnya sebagai sampul baru
             if ($wasSampul) {
                 $fotoPengganti = $kamar->fotos()->first();
                 if ($fotoPengganti) {
@@ -213,12 +348,21 @@ class KamarController extends Controller
                 }
             }
 
-            // Jika setelah dihapus kamar tidak punya foto lagi dan berstatus unggulan, matikan status unggulannya
             if ($kamar->fotos()->count() === 0 && $kamar->unggulan) {
                 $kamar->update(['unggulan' => false]);
                 session()->flash('sukses', 'Foto dihapus. Kamar tidak lagi unggulan karena tidak punya foto.');
             }
         });
+
+        // DITAMBAHKAN TAHAP 9B: Catat penghapusan foto kamar
+        $pelaku = auth()->user()->nama_lengkap ?? 'Pengelola';
+        LogAktivitasService::catat(
+            'kamar_foto_hapus',
+            "{$pelaku} menghapus foto kamar {$kamar->nomor_kamar}",
+            $kamar,
+            $dataFotoLama,
+            null
+        );
 
         return back()->with('sukses', 'Foto kamar berhasil dihapus.');
     }
@@ -234,9 +378,7 @@ class KamarController extends Controller
         }
 
         DB::transaction(function () use ($kamar, $foto) {
-            // Set semua foto kamar ini menjadi bukan sampul
             $kamar->fotos()->update(['is_sampul' => false]);
-            // Set foto yang dipilih menjadi sampul
             $foto->update(['is_sampul' => true]);
         });
 
@@ -244,8 +386,8 @@ class KamarController extends Controller
     }
 
     /**
-     * DITAMBAHKAN TAHAP 8: Menampilkan halaman konfirmasi hapus kamar setelah memeriksa syarat kelayakan hapus.
-     * Alasan: Mencegah penghapusan kamar yang sedang terisi atau pernah dihuni (agar riwayat pembayaran tetap aman).
+     * Menampilkan halaman konfirmasi hapus kamar setelah memeriksa syarat kelayakan hapus.
+     * Alasan: Mencegah penghapusan kamar yang sedang terisi atau pernah dihuni.
      */
     public function konfirmasiHapus(Kamar $kamar)
     {
@@ -259,8 +401,8 @@ class KamarController extends Controller
     }
 
     /**
-     * DITAMBAHKAN TAHAP 8: Menghapus data kamar dalam transaksi DB lalu menghapus file fotonya dari disk public.
-     * Alasan: Menjaga konsistensi database dan membersihkan file fisik hanya setelah transaksi sukses.
+     * Menghapus data kamar dalam transaksi DB lalu menghapus file fotonya dari disk public.
+     * Alasan: Menjaga konsistensi database dan membersihkan file fisik setelah transaksi sukses.
      */
     public function destroy(Kamar $kamar)
     {
@@ -271,20 +413,29 @@ class KamarController extends Controller
 
         $nomorKamar = $kamar->nomor_kamar;
         $sedangUnggulan = (bool) $kamar->unggulan;
+        $dataKamarLama = $kamar->toArray();
 
-        // Kumpulkan path semua foto sebelum baris kamar (dan cascade kamar_foto) dihapus
         $pathFotoList = $kamar->fotos()->pluck('path')->filter()->values()->all();
 
         DB::transaction(function () use ($kamar) {
             $kamar->delete();
         });
 
-        // Hapus file fisik foto dari disk public setelah transaksi database berhasil
         foreach ($pathFotoList as $pathFoto) {
             if (Storage::disk('public')->exists($pathFoto)) {
                 Storage::disk('public')->delete($pathFoto);
             }
         }
+
+        // DITAMBAHKAN TAHAP 9B: Catat penghapusan kamar
+        $pelaku = auth()->user()->nama_lengkap ?? 'Pengelola';
+        LogAktivitasService::catat(
+            'kamar_hapus',
+            "{$pelaku} menghapus kamar {$nomorKamar}",
+            ['tipe' => Kamar::class, 'id' => $kamar->id],
+            $dataKamarLama,
+            null
+        );
 
         $pesanSukses = "Kamar {$nomorKamar} berhasil dihapus.";
         if ($sedangUnggulan) {
@@ -295,7 +446,7 @@ class KamarController extends Controller
     }
 
     /**
-     * DITAMBAHKAN TAHAP 8: Memeriksa apakah kamar boleh dihapus berdasarkan status dan riwayat penghuni.
+     * Memeriksa apakah kamar boleh dihapus berdasarkan status dan riwayat penghuni.
      * Alasan: Aturan bisnis di server bahwa kamar terisi atau pernah/sedang dihuni tidak boleh dihapus.
      */
     private function alasanTidakBisaDihapus(Kamar $kamar): ?string

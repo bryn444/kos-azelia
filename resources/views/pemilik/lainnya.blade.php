@@ -33,4 +33,12 @@
         </div>
     </div>
 </div>
+
+{{-- ===== BAGIAN: KARTU LOG AKTIVITAS (TAHAP 9B) ===== --}}
+<div class="col-md-6">
+    <a href="{{ route('pemilik.log') }}" class="card border-0 shadow-sm rounded-4 p-4 text-decoration-none h-100 bg-white">
+        <h3 class="fw-bold text-primary mb-2">Log Aktivitas</h3>
+        <p class="text-muted fs-5 mb-0">Lihat catatan aktivitas masuk, pembayaran, penghuni, kamar, dan pengaturan.</p>
+    </a>
+</div>
 @endsection

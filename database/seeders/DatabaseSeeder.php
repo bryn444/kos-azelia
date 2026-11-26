@@ -114,3 +114,7 @@ class DatabaseSeeder extends Seeder
         }
     }
 }
+
+// DITAMBAHKAN TAHAP 9B: Pastikan akun yang dibuat melalui seeder memiliki wajib_ganti_password = true
+        // Contoh penggunaan pada tiap akun yang dibuat di DatabaseSeeder:
+        // 'wajib_ganti_password' => true,

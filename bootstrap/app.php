@@ -1,5 +1,14 @@
 <?php
+/**
+ * NAMA FILE: bootstrap/app.php (DIPERBARUI TAHAP 9B)
+ * FUNGSI: Mendaftarkan alias middleware dan middleware grup panel pada Laravel 13.
+ * CARA MENGUBAH: Tambahkan alias middleware baru di bagian withMiddleware.
+ */
 
+use App\Http\Middleware\IsPemilik;
+use App\Http\Middleware\IsPengelola;
+use App\Http\Middleware\NoCache;
+use App\Http\Middleware\WajibGantiPassword;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -11,15 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // DITAMBAHKAN: percayai proxy (ngrok) supaya Laravel tahu pengunjung memakai HTTPS,
-        // sehingga asset() dan route() menghasilkan alamat https://.
-        // Untuk demo ngrok cukup '*'. Saat hosting sungguhan, ganti dengan IP proxy server.
-        $middleware->trustProxies(at: '*');
-
         $middleware->alias([
-            'isPengelola' => \App\Http\Middleware\IsPengelola::class,
-            'isPemilik' => \App\Http\Middleware\IsPemilik::class,
-            'noCache' => \App\Http\Middleware\NoCache::class,
+            'isPengelola' => IsPengelola::class,
+            'isPemilik' => IsPemilik::class,
+            'noCache' => NoCache::class,
+            'wajibGantiPassword' => WajibGantiPassword::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

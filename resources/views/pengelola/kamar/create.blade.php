@@ -1,14 +1,15 @@
 @extends('layouts.panel.main')
 
 {{-- 
-  NAMA FILE: create.blade.php (Modul Kamar - DITAMBAHKAN TAHAP 5A)
-  FUNGSI: Form untuk menambah kamar baru beserta deskripsi, status unggulan, dan unggah foto multiple.
-  CARA MENGUBAH: Tambahkan input form baru atau ubah validasi tampilannya.
+  NAMA FILE: create.blade.php (Modul Kamar - DITAMBAHKAN TAHAP 5A & TAHAP 9A)
+  FUNGSI: Form tambah kamar baru dengan status otomatis kosong, pratinjau tarif Rupiah, dan unggah foto.
+  CARA MENGUBAH: Sesuaikan batas tarif di config/kos.php bagian 'aturan'.
 --}}
 
 @section('title', 'Tambah Kamar Baru - Kos Azelia')
 
 @section('content')
+{{-- ===== BAGIAN: FORM TAMBAH KAMAR BARU ===== --}}
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
@@ -24,20 +25,21 @@
                     @error('nomor_kamar')<div class="invalid-feedback fs-6">{{ $message }}</div>@enderror
                 </div>
 
-                {{-- Tarif Sewa --}}
+                {{-- Tarif Sewa & Pratinjau Rupiah --}}
                 <div class="mb-4">
                     <label class="form-label fs-5 fw-semibold">Tarif Sewa Per Bulan (Rp)</label>
-                    <input type="number" name="tarif" class="form-control form-control-lg fs-5 rounded-pill px-4 @error('tarif') is-invalid @enderror" value="{{ old('tarif', 550000) }}" required>
+                    <input type="number" name="tarif" id="inputTarifCreate" class="form-control form-control-lg fs-5 rounded-pill px-4 @error('tarif') is-invalid @enderror" value="{{ old('tarif', max(550000, $tarifMin ?? 100000)) }}" min="{{ $tarifMin ?? 100000 }}" max="{{ $tarifMaks ?? 5000000 }}" step="1" required>
+                    <small class="text-muted d-block mt-2 fs-6">
+                        Pratinjau Tarif: <strong id="previewRupiahCreate" class="text-primary">Rp0</strong>
+                        (Rentang: Rp{{ number_format($tarifMin ?? 100000, 0, ',', '.') }} - Rp{{ number_format($tarifMaks ?? 5000000, 0, ',', '.') }})
+                    </small>
                     @error('tarif')<div class="invalid-feedback fs-6">{{ $message }}</div>@enderror
                 </div>
 
-                {{-- Status Kamar --}}
-                <div class="mb-4">
-                    <label class="form-label fs-5 fw-semibold">Status Kamar</label>
-                    <select name="status" class="form-select form-select-lg fs-5 rounded-pill px-4">
-                        <option value="kosong" selected>Kosong</option>
-                        <option value="terisi">Terisi</option>
-                    </select>
+                {{-- DITAMBAHKAN TAHAP 9A: Status kamar ditampilkan sebagai teks & berubah otomatis --}}
+                <div class="mb-4 p-3 bg-light rounded-4 border">
+                    <div class="fs-5 fw-semibold">Status Awal: <span class="badge bg-success fs-6">Kosong</span></div>
+                    <small class="text-muted d-block mt-1 fs-6">Status berubah otomatis saat penghuni masuk atau keluar</small>
                 </div>
 
                 {{-- DITAMBAHKAN TAHAP 5A: Deskripsi Singkat Kamar --}}
@@ -49,7 +51,7 @@
 
                 {{-- DITAMBAHKAN TAHAP 5A: Saklar Kamar Unggulan --}}
                 <div class="mb-4 form-check form-switch p-3 bg-light rounded-4">
-                    <input type="checkbox" name="unggulan" value="1" class="form-check-input ms-0 me-3" id="unggulanSwitch" style="width: 3em; height: 1.5em;" {{ old('unggulan') ? 'checked' : '' }}>
+                    <input type="checkbox" name="unggulan" value="1" class="form-check-input ms-0 me-3" id="unggulanSwitch" {{ old('unggulan') ? 'checked' : '' }}>
                     <label class="form-check-label fs-5 fw-semibold pt-1" for="unggulanSwitch">
                         ⭐ Jadikan Kamar Unggulan <span class="d-block text-muted fs-6">Tampil di bagian paling atas halaman calon penghuni. (Wajib memiliki minimal 1 foto).</span>
                     </label>
@@ -79,15 +81,29 @@
 @endsection
 
 @section('scripts')
-{{-- DITAMBAHKAN TAHAP 5A: Skrip JavaScript untuk Pratinjau Foto --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const inputTarif = document.getElementById('inputTarifCreate');
+        const previewRupiah = document.getElementById('previewRupiahCreate');
+
+        function formatRupiah(nilai) {
+            const angka = parseInt(nilai, 10);
+            if (isNaN(angka)) return 'Rp0';
+            return 'Rp' + angka.toLocaleString('id-ID');
+        }
+
+        if (inputTarif && previewRupiah) {
+            previewRupiah.textContent = formatRupiah(inputTarif.value);
+            inputTarif.addEventListener('input', function () {
+                previewRupiah.textContent = formatRupiah(this.value);
+            });
+        }
+
         const inputFoto = document.getElementById('inputFoto');
         const previewContainer = document.getElementById('previewContainer');
 
         if (inputFoto) {
             inputFoto.addEventListener('change', function (e) {
-                // Hapus preview lama kecuali elemen pertama label
                 const existingPreviews = previewContainer.querySelectorAll('.preview-item');
                 existingPreviews.forEach(el => el.remove());
 
@@ -101,7 +117,7 @@
                             col.className = 'col-md-4 col-sm-6 preview-item';
                             col.innerHTML = `
                                 <div class="card border shadow-sm rounded-4 p-2 text-center">
-                                    <img src="${e.target.result}" class="rounded-3 object-fit-cover" style="height: 120px; width: 100%;">
+                                    <img src="${e.target.result}" class="rounded-3 object-fit-cover">
                                     <span class="small text-muted mt-1">Foto ${index + 1} ${index === 0 ? '(Sampul Utama)' : ''}</span>
                                 </div>
                             `;

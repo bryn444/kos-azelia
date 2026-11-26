@@ -8,6 +8,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\LogAktivitasController;
 use App\Http\Controllers\Pengelola\BerandaController;
 use App\Http\Controllers\Pengelola\KamarController;
 use App\Http\Controllers\Pengelola\LatarBerandaController;
@@ -41,8 +42,13 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // 3. Rute Panel Pengelola (Kakek)
-Route::middleware(['auth', 'isPengelola'])->prefix('pengelola')->name('pengelola.')->group(function () {
+// DITAMBAHKAN TAHAP 9B: Middleware wajibGantiPassword setelah auth dan sebelum isPengelola
+Route::middleware(['auth', 'wajibGantiPassword', 'isPengelola'])->prefix('pengelola')->name('pengelola.')->group(function () {
     Route::get('/beranda', [BerandaController::class, 'index'])->name('beranda');
+
+    // DITAMBAHKAN TAHAP 9A: Rute konfirmasi dan proses sinkronisasi status kamar
+    Route::get('/kamar/sinkron-status', [KamarController::class, 'konfirmasiSinkron'])->name('kamar.sinkron');
+    Route::post('/kamar/sinkron-status', [KamarController::class, 'prosesSinkron'])->name('kamar.sinkron.proses');
 
     // Route pengelolaan latar belakang halaman calon penghuni
     Route::get('/latar-beranda', [LatarBerandaController::class, 'index'])->name('latar');
@@ -54,7 +60,7 @@ Route::middleware(['auth', 'isPengelola'])->prefix('pengelola')->name('pengelola
     // DITAMBAHKAN TAHAP 8: Rute konfirmasi dan eksekusi hapus kamar
     Route::get('/kamar/{kamar}/hapus', [KamarController::class, 'konfirmasiHapus'])->name('kamar.hapus');
     Route::post('/kamar/{kamar}/hapus', [KamarController::class, 'destroy'])->name('kamar.destroy');
-    
+
     // Halaman pratinjau publik khusus di dalam iframe editor pengelola
     Route::get('/latar-beranda/pratinjau', [LatarBerandaController::class, 'pratinjau'])->name('latar.pratinjau');
 
@@ -103,10 +109,14 @@ Route::middleware(['auth', 'isPengelola'])->prefix('pengelola')->name('pengelola
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
     Route::get('/laporan/pdf', [LaporanController::class, 'downloadPdf'])->name('laporan.pdf');
     Route::get('/laporan/excel', [LaporanController::class, 'downloadExcel'])->name('laporan.excel');
+
+    // DITAMBAHKAN TAHAP 9B: Halaman Log Aktivitas (hanya baca) untuk pengelola
+    Route::get('/log-aktivitas', [LogAktivitasController::class, 'index'])->name('log');
 });
 
 // 4. Rute Panel Pemilik (Ibu Endang Supriyatin)
-Route::middleware(['auth', 'isPemilik'])->prefix('pemilik')->name('pemilik.')->group(function () {
+// DITAMBAHKAN TAHAP 9B: Middleware wajibGantiPassword setelah auth dan sebelum isPemilik
+Route::middleware(['auth', 'wajibGantiPassword', 'isPemilik'])->prefix('pemilik')->name('pemilik.')->group(function () {
     Route::get('/rekap', [RekapController::class, 'index'])->name('rekap');
     Route::get('/belum-bayar', [BelumBayarController::class, 'index'])->name('belum_bayar');
     Route::get('/riwayat-pembayaran', [RiwayatController::class, 'pembayaran'])->name('riwayat_pembayaran');
@@ -122,4 +132,7 @@ Route::middleware(['auth', 'isPemilik'])->prefix('pemilik')->name('pemilik.')->g
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan');
     Route::get('/laporan/pdf', [LaporanController::class, 'downloadPdf'])->name('laporan.pdf');
     Route::get('/laporan/excel', [LaporanController::class, 'downloadExcel'])->name('laporan.excel');
+
+    // DITAMBAHKAN TAHAP 9B: Halaman Log Aktivitas (hanya baca) untuk pemilik
+    Route::get('/log-aktivitas', [LogAktivitasController::class, 'index'])->name('log');
 });

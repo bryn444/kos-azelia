@@ -1,8 +1,15 @@
 @extends('layouts.panel.main')
 
+{{-- 
+  NAMA FILE: beranda.blade.php (DIPERBARUI TAHAP 9A)
+  FUNGSI: Menampilkan ringkasan kamar & tunggakan, kartu "Perlu Dicek", daftar menunggak, dan jatuh tempo 7 hari.
+  CARA MENGUBAH: Sesuaikan ambang atau teks peringatan pada BerandaController dan config/kos.php.
+--}}
+
 @section('title', 'Beranda Pengelola - Kos Azelia')
 
 @section('content')
+{{-- ===== BAGIAN: RINGKASAN UTAMA ===== --}}
 <div class="row mb-4 g-3">
     <div class="col-md-6">
         <div class="card border-0 shadow-sm rounded-4 p-4 text-white bg-primary">
@@ -18,7 +25,26 @@
     </div>
 </div>
 
-<!-- Daftar Kartu Menunggak -->
+{{-- ===== BAGIAN: KARTU PERLU DICEK (TAHAP 9A) ===== --}}
+@if(!empty($itemPerluDicek))
+    <div class="mb-5">
+        <div class="card border-warning border-2 shadow-sm rounded-4 p-4 bg-white">
+            <h2 class="fw-bold text-dark mb-3">Perlu Dicek</h2>
+            <ul class="list-group list-group-flush fs-5">
+                @foreach($itemPerluDicek as $item)
+                    <li class="list-group-item px-0 py-3 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                        <span class="fw-semibold text-dark">{{ $item['teks'] }}</span>
+                        <a href="{{ $item['aksi_url'] }}" class="btn btn-{{ $item['aksi_style'] }} {{ $item['aksi_style'] === 'warning' ? 'text-dark' : '' }} btn-lg rounded-pill px-4 py-2 fw-bold">
+                            {{ $item['aksi_label'] }}
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+@endif
+
+{{-- ===== BAGIAN: DAFTAR KARTU MENUNGGAK ===== --}}
 <div class="mb-5">
     <h2 class="fw-bold text-danger mb-3">Menunggak Pembayaran</h2>
     @forelse($daftarMenunggak as $p)
@@ -45,7 +71,7 @@
     @endforelse
 </div>
 
-<!-- Daftar Jatuh Tempo 7 Hari Ke Depan -->
+{{-- ===== BAGIAN: DAFTAR JATUH TEMPO 7 HARI KE DEPAN ===== --}}
 <div>
     <h2 class="fw-bold text-dark mb-3">Jatuh Tempo 7 Hari Ke Depan</h2>
     @forelse($daftarJatuhTempo7Hari as $p)
